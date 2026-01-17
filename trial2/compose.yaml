@@ -1,0 +1,25 @@
+services:
+    server:
+        image: docker.cloudsmith.io/isc/docker/kea-dhcp4
+        volumes:
+            - ./server/config/kea:/etc/kea
+            - ./server/:/var/lib/kea
+        networks:
+            ipvlan0:
+                ipv4_address: 192.168.50.10 # optional, fixed IP in subnet
+    client:
+        build:
+            context: ./client
+        cap_add:
+            - NET_ADMIN
+        networks:
+            - ipvlan0
+networks:
+    ipvlan0:
+        driver: ipvlan
+        driver_opts:
+            parent: wlp0s20f3 # the WiFi interface
+        ipam:
+            config:
+                - subnet: 192.168.50.0/24
+
