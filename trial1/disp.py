@@ -17,6 +17,9 @@ if __name__ == '__main__':
     output_tag = args.out_tag if args.out_tag else "dhcp_measure"
 
     df = pd.read_csv(input_csv)
+
+    print(df.head())
+    exit(0)
     colors = {'DISCOVER': 'blue',
               'OFFER': 'green',
               'REQUEST': 'orange',

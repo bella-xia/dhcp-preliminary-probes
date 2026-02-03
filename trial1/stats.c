@@ -15,7 +15,6 @@ struct eth_header {
     uint16_t    type;
 };
 
-
 struct ip_header {
     uint8_t     ver_ihl;
     uint8_t     tos;
@@ -29,14 +28,12 @@ struct ip_header {
     uint32_t    dst_ip;
 };
 
-
 struct udp_header {
     uint16_t    src_port;
     uint16_t    dst_port;
     uint16_t    len;
     uint16_t    cksum;
 };
-
 
 struct dhcp_header {
     uint8_t     op;
@@ -56,35 +53,138 @@ struct dhcp_header {
     uint8_t     options[312];
 };
 
+typedef struct {
+    // meta: timestamp
+    double ts; 
 
-int get_dhcp_msgtype(const u_char *options) {
+    // ethernet
+    uint8_t src_mac[6];
+    uint8_t dst_mac[6];
+
+    // ip
+    uint32_t src_ip;
+    uint32_t dst_ip;
+
+    // dhcp fixed
+    uint8_t msg_type;
+    uint32_t xid;
+    uint32_t yiaddr;
+    uint8_t chaddr[6];
+
+    // dhcp options
+    uint32_t request_ip;
+    uint32_t server_id;
+    uint32_t lease_time;
+} dhcp_event_t;
+
+void parse_dhcp_options(const uint8_t *opts, dhcp_event_t *ev) {
     int i = 4;
+
     while (i < 312) {
-        if (options[i] == 53) // DHCP message type option
-            return options[i+2];
-        else if (options[i] == 255) // end option
-            break;
-        else 
-            i += 2 + options[i+1]; // move to next option    
+
+        uint8_t code = opts[i];
+
+        if (code == 0) { // padding
+            i++;
+            continue;
+        }
+        if (code == 255) break; // end of options
+        
+        uint8_t len = opts[i+1];
+        const uint8_t *data = opts + i + 2;
+
+        switch (code) {
+            case 50: 
+                {
+                    memcpy(&ev->request_ip, data, 4); 
+                }
+                break;
+            case 51:
+                {
+                    memcpy(&ev->lease_time, data, 4);
+                }
+                break;
+            case 53:
+                {
+                    ev->msg_type = data[0];
+                }
+                break;
+            case 54:
+                {
+                    memcpy(&ev->server_id, data, 4);
+                }
+                break;
+            default:
+                break;
+        }
+        i += 2 + len;
     }
-    return 0; // unknown
 }
 
-uint32_t get_dhcp_lease(const u_char *options) {
-    int i = 4;
-    while (i < 312) {
-        if (options[i] == 51) // lease time option
-        {
-            uint32_t lease;
-            memcpy(&lease, options + i + 2, 4);
-            return ntohl(lease);
-        }
-        else if (options[i] == 255) // end option
-            break;
-        else 
-            i += 2 + options[i+1]; // move to next option    
-    }
-    return 0; // unknown / not found
+int parse_dhcp_packet(const u_char *pkt,
+                      const struct pcap_pkthdr *hdr,
+                      dhcp_event_t *ev) {
+    
+    // parse time
+    ev->ts = hdr->ts.tv_sec + hdr->ts.tv_usec / 1e6;
+    
+    // parse ethernet
+    struct eth_header *eth = (struct eth_header *)pkt;
+    memcpy(ev->src_mac, eth->src, 6);
+    memcpy(ev->dst_mac, eth->dest, 6);
+
+    // parse ip
+    struct ip_header *ip = (struct ip_header *)(pkt + sizeof(struct eth_header));
+    if (ip->proto != 17) return 0;
+    ev->src_ip = ip->src_ip;
+    ev->dst_ip = ip->dst_ip;
+
+    // parse udp
+    int ip_len = (ip->ver_ihl & 0x0F) * 4;
+    struct udp_header *udp = (struct udp_header *)((u_char *)ip + ip_len);
+    if (ntohs(udp->src_port) != 67 && ntohs(udp->src_port) != 68 &&
+        ntohs(udp->dst_port) != 67 && ntohs(udp->dst_port) != 68)
+        return 0;
+
+    // parse dhcp
+    struct dhcp_header *dhcp = (struct dhcp_header *)((u_char *)udp + sizeof(struct udp_header));
+    ev->xid = ntohl(dhcp->xid);
+    ev->yiaddr = dhcp->yiaddr;
+    memcpy(ev->chaddr, dhcp->chaddr, 6);
+    parse_dhcp_options(dhcp->options, ev);
+
+    return (ev->msg_type != 0);
+}
+
+void emit_csv(FILE *fp, const dhcp_event_t *ev) {
+    char src_mac[18], dst_mac[18];
+    sprintf(src_mac, "%02x:%02x:%02x:%02x:%02x:%02x",
+            ev->src_mac[0], ev->src_mac[1], ev->src_mac[2],
+            ev->src_mac[3], ev->src_mac[4], ev->src_mac[5]);
+    sprintf(dst_mac, "%02x:%02x:%02x:%02x:%02x:%02x",
+            ev->dst_mac[0], ev->dst_mac[1], ev->dst_mac[2],
+            ev->dst_mac[3], ev->dst_mac[4], ev->dst_mac[5]);
+
+    
+    struct in_addr a;
+
+    fprintf(fp, "%.6f,%d,%s,%s,",
+                ev->ts,
+                ev->msg_type,
+                src_mac,
+                dst_mac);
+    a.s_addr = ev->src_ip;
+    fprintf(fp, "%s,", inet_ntoa(a));
+    a.s_addr = ev->dst_ip;
+    fprintf(fp, "%s,", inet_ntoa(a));
+    a.s_addr = ev->yiaddr;
+    fprintf(fp, "%s,", inet_ntoa(a));
+    a.s_addr = ev->request_ip;
+    fprintf(fp, "%s,", inet_ntoa(a));
+    a.s_addr = ev->server_id;
+    fprintf(fp, "%s,", inet_ntoa(a));
+    fprintf(fp, "%u\n",
+            ntohl(ev->lease_time));
 }
 
 int main(int argc, char *argv[]) {
@@ -109,70 +209,21 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    fprintf(fp, "ts,msgtype,lease\n");
-    int num_ack = 0, num_disc = 0, num_req = 0, num_off = 0;
+    fprintf(fp, 
+            "ts,msgtype,src_mac,dst_mac,src_ip,dst_ip,yiaddr,requested_ip,server_id,lease\n");
+
+    dhcp_event_t ev;
 
     while ((res = pcap_next_ex(handle, &header, &packet)) > 0) {
         if (res == 0) continue; // timeout
-        // parse time                    
-        double frame_time = header->ts.tv_sec + header->ts.tv_usec / 1e6;
+        
+        memset(&ev, 0x00, sizeof(dhcp_event_t));
 
-        // parse ip
-        struct ip_header *ip = (struct ip_header *)(packet + sizeof(struct eth_header));
-        if (ip->proto != 17) continue;
-
-        // parse udp
-        int ip_len = (ip->ver_ihl & 0x0F) * 4;
-        struct udp_header *udp = (struct udp_header *)((u_char *)ip + ip_len);
-        if (ntohs(udp->src_port) != 67 && ntohs(udp->src_port) != 68 &&
-            ntohs(udp->dst_port) != 67 && ntohs(udp->dst_port) != 68)
-            continue;
-
-        // parse dhcp
-        struct dhcp_header *dhcp = (struct dhcp_header *)((u_char *)udp + sizeof(struct udp_header));
-        int msg_type = get_dhcp_msgtype(dhcp->options);
-
-        switch (msg_type) {
-            case DHCP_ACK:
-                {
-                    uint32_t lease_time = get_dhcp_lease(dhcp->options);
-                    fprintf(fp, "%.6f,%s,%d\n", frame_time, "ACK", lease_time);
-                    num_ack++;
-                }
-                break;
-            case DHCP_DISCOVER:
-                {
-                    fprintf(fp, "%.6f,%s,0\n", frame_time, "DISCOVER");
-                    num_disc++;
-                }
-                break;
-            case DHCP_REQUEST:
-                {
-                    fprintf(fp, "%.6f,%s,0\n", frame_time, "REQUEST");
-                    num_req++;
-                }
-                break;
-            case DHCP_OFFER:
-                {
-                    uint32_t lease_time = get_dhcp_lease(dhcp->options);
-                    fprintf(fp, "%.6f,%s,%d\n", frame_time, "OFFER", lease_time);
-                    num_off++;
-                }
-                break;
-            default:
-                break;
-        }
+        if (parse_dhcp_packet(packet, header, &ev)) 
+            emit_csv(fp, &ev);
 
     }
     fclose(fp);
-
-    printf("DHCP statistics\n");
-    printf("DISCOVER: %d\n", num_disc);
-    printf("OFFER: %d\n", num_off);
-    printf("REQUEST: %d\n", num_req);
-    printf("ACK: %d\n", num_ack);
-
     pcap_close(handle);
     return 0;
-
 }
