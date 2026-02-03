@@ -1,0 +1,18 @@
+[
+  {
+    "file": "uart.c",
+    "arguments": [
+      "aarch64-linux-gnu-gcc",
+      "-O2",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-c",
+      "uart.c",
+      "-o",
+      "uart.o"
+    ],
+    "directory": "/home/jihan-xia/Desktop/Lab/cs244c/trial5",
+    "output": "uart.o"
+  }
+]

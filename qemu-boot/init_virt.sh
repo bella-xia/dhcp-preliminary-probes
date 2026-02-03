@@ -1,0 +1,1 @@
+qemu-system-aarch64 -M virt -cpu cortex-a53 -m 8 -nographic -kernel bootloader.bin -serial mon:stdio -d int,cpu_reset
