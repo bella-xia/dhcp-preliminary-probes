@@ -16,6 +16,12 @@ void cmd_peek(const char *args);
 void cmd_hexdump(const char *args);
 void cmd_dump32(const char *args);
 
+// DHCP-related
+void cmd_dhcp_init(const char *args UNUSED);
+void cmd_dhcp_leases(const char *args UNUSED);
+/* dhcp_stats removed */
+void cmd_dhcp_test(const char *args UNUSED);
+
 // UNIMPLEMENTED
 #if 0
 void cmd_poke(const char *args);

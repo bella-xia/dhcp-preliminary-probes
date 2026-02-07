@@ -26,6 +26,11 @@ static const struct command commands[] = {
     {"hexdump", cmd_hexdump,    8},
     {"dump32",  cmd_dump32,     7},
     {"peek",    cmd_peek,       5},
+    
+    // DHCP-related cli
+    {"dhcp_init",    cmd_dhcp_init,      0},
+    {"dhcp_leases",  cmd_dhcp_leases,    0},
+    {"dhcp_test",    cmd_dhcp_test,      0},
 };
 
 void main(void) {

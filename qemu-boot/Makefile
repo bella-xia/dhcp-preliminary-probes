@@ -5,7 +5,7 @@ OBJCOPY=$(CROSS)objcopy
 CFLAGS=-O2 -ffreestanding -Wall -Wextra -nostdlib -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables
 LDFLAGS=-T linker.ld -nostdlib
 
-CSRC=main.c uart.c kstring.c cli_utils.c cli_gencmds.c cli_memcmds.c
+CSRC=main.c uart.c kstring.c cli_utils.c cli_gencmds.c cli_memcmds.c dhcp_server.c
 ASRC=start.S
 
 COBJS=$(CSRC:.c=.o)
