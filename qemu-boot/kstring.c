@@ -1,7 +1,7 @@
 #include "kstring.h"
 
 
-int strcmp(const char *s1, const char *s2) {
+int kstrcmp(const char *s1, const char *s2) {
     while (*s1 && *s1 == *s2) {
         s1++;
         s2++;
@@ -9,7 +9,7 @@ int strcmp(const char *s1, const char *s2) {
     return *(unsigned char *)s1 - *(unsigned char *)s2;
 }
 
-int strncmp(const char *s1, const char *s2, size_t n) {
+int kstrncmp(const char *s1, const char *s2, size_t n) {
     for (size_t i = 0; i < n; i++) {
         if (s1[i] != s2[i]) 
             return (unsigned char)s1[i] - (unsigned char)s2[i];
@@ -19,20 +19,20 @@ int strncmp(const char *s1, const char *s2, size_t n) {
     return 0;
 }
 
-size_t strlen(const char *s) {
+size_t kstrlen(const char *s) {
     size_t len = 0;
     while (*s++)
         len++;
     return len;
 }
 
-char *strcpy(char *dst, const char *src) {
+char *kstrcpy(char *dst, const char *src) {
     char *ret = dst;
     while ((*dst++ = *src++));
     return ret;
 }
 
-char *strncpy(char *dst, const char *src, size_t n) {
+char *kstrncpy(char *dst, const char *src, size_t n) {
     char *ret = dst;
     size_t i;
     for (i = 0; i < n && *src != '\0'; i++)
@@ -40,4 +40,11 @@ char *strncpy(char *dst, const char *src, size_t n) {
     for (; i < n; i++) 
         *dst++ = '\0';
     return ret;
+}
+
+void *kmemset(void *s, int c, size_t n) {
+    unsigned char *p = (unsigned char *)s;
+    while (n--)
+        *p++ = (unsigned char)c;
+    return s;
 }

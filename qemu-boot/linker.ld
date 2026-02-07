@@ -2,7 +2,7 @@ ENTRY(_start)
 
 MEMORY 
 {
-    RAM (rwx) : ORIGIN = 0x40000000, LENGTH = 8M
+    RAM (rwx) : ORIGIN = 0x40080000, LENGTH = 8M  /* qemu does something on its own so the code is actually loaded here */
 }
 
 SECTIONS 

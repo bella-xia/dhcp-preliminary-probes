@@ -1,6 +1,7 @@
 /* start.S ARM64 minimal entry */
 .section ".text.boot"
 .global _start
+.global hang
 
 .extern main
 
