@@ -48,20 +48,9 @@ void cmd_unknow(const char *args) {
     uart_puts("\n");
 }
 
-/* Helper functions */
-static uint32_t ip_to_uint32(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
-    return (a << 24) | (b << 16) | (c << 8) | d;
-}
-
-static void uint32_to_ip(uint32_t ip, uint8_t *a, uint8_t *b, uint8_t *c, uint8_t *d) {
-    *a = (ip >> 24) & 0xFF;
-    *b = (ip >> 16) & 0xFF;
-    *c = (ip >> 8) & 0xFF;
-    *d = ip & 0xFF;
-}
-
 /* Global DHCP server state */
-static dhcp_lease_t g_leases[100];  /* Static lease pool */
+// TODO: make it not static
+static dhcp_lease_t g_leases[100];  /* Static lease pool. */
 static dhcp_server_t g_dhcp_server;
 static uint8_t g_server_initialized = 0;
 
@@ -74,18 +63,22 @@ void cmd_dhcp_init(const char *args UNUSED) {
     }
     
     uart_puts("1");
-    /* Default configuration - assign fields one by one to avoid bare-metal issues */
+    /* Default configuration */
     dhcp_config_t config;
     uart_puts("2");
-    
+    // Server IP: 192.168.1.1
     config.server_ip = ip_to_uint32(192, 168, 1, 1);
     uart_puts("3");
+    // subnet mask
     config.subnet_mask = ip_to_uint32(255, 255, 255, 0);
     uart_puts("4");
+    // gateway IP: 192.168.1.1
     config.gateway_ip = ip_to_uint32(192, 168, 1, 1);
     uart_puts("5");
+    // DNS address: 8.8.8.8
     config.dns_ip = ip_to_uint32(8, 8, 8, 8);
     uart_puts("6");
+    // Pool: 192.168.1.100 - 192.168.1.200
     config.pool_start = ip_to_uint32(192, 168, 1, 100);
     uart_puts("7");
     config.pool_end = ip_to_uint32(192, 168, 1, 200);
@@ -101,7 +94,7 @@ void cmd_dhcp_init(const char *args UNUSED) {
     uart_puts("B");
     g_server_initialized = 1;
     uart_puts("C");
-    
+    // TODO: not to hard code
     uart_puts("\nDHCP server initialized\n");
     uart_puts("  Server IP: 192.168.1.1\n");
     uart_puts("  Pool: 192.168.1.100 - 192.168.1.200\n");
@@ -155,6 +148,14 @@ void cmd_dhcp_leases(const char *args UNUSED) {
     uart_puts("\n");
 }
 
+/* Global variable for testing */
+uint16_t MAC1 = 0xAA;
+uint16_t MAC2 = 0xBB;
+uint16_t MAC3 = 0xCC;
+uint16_t MAC4 = 0xDD;
+uint16_t MAC5 = 0xEE;
+uint16_t MAC6 = 0x00;
+
 void cmd_dhcp_test(const char *args UNUSED) {
     if (!g_server_initialized) {
         uart_puts("DHCP server not initialized\n");
@@ -188,12 +189,13 @@ void cmd_dhcp_test(const char *args UNUSED) {
     discover.giaddr = 0;
     
     /* Test MAC address: AA:BB:CC:DD:EE:FF */
-    discover.chaddr[0] = 0xAA;
-    discover.chaddr[1] = 0xBB;
-    discover.chaddr[2] = 0xCC;
-    discover.chaddr[3] = 0xDD;
-    discover.chaddr[4] = 0xEE;
-    discover.chaddr[5] = 0xFF;
+    discover.chaddr[0] = MAC1;
+    discover.chaddr[1] = MAC2;
+    discover.chaddr[2] = MAC3;
+    discover.chaddr[3] = MAC4;
+    discover.chaddr[4] = MAC5;
+    discover.chaddr[5] = MAC6;
+    MAC6 += 1;
     
     discover.magic_cookie = DHCP_MAGIC_COOKIE;
     

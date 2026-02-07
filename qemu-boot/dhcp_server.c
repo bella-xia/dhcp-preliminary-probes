@@ -3,11 +3,15 @@
 #include <stdio.h>
 
 /* Helper function to convert integer to IP address bytes */
-static void uint32_to_ip(uint32_t ip, uint8_t *a, uint8_t *b, uint8_t *c, uint8_t *d) {
+void uint32_to_ip(uint32_t ip, uint8_t *a, uint8_t *b, uint8_t *c, uint8_t *d) {
     *a = (ip >> 24) & 0xFF;
     *b = (ip >> 16) & 0xFF;
     *c = (ip >> 8) & 0xFF;
     *d = ip & 0xFF;
+}
+
+uint32_t ip_to_uint32(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+    return (a << 24) | (b << 16) | (c << 8) | d;
 }
 
 /* Initialize the DHCP server */
@@ -345,21 +349,6 @@ void dhcp_process_message(dhcp_server_t *server, dhcp_message_t *request, dhcp_m
                     dhcp_build_nak(request, response);
                 }
             }
-            break;
-        }
-        
-        case DHCP_RELEASE: {
-            /* Client is releasing an IP */
-            dhcp_lease_t *lease = dhcp_find_lease(server, request->chaddr);
-            if (lease) {
-                lease->in_use = 0;
-            }
-            break;
-        }
-        
-        case DHCP_INFORM: {
-            /* Client needs network parameters but already has IP */
-            dhcp_build_ack(server, request, response, request->ciaddr);
             break;
         }
         

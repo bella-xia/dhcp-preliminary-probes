@@ -11,8 +11,6 @@
 #define DHCP_DECLINE  4
 #define DHCP_ACK      5
 #define DHCP_NAK      6
-#define DHCP_RELEASE  7
-#define DHCP_INFORM   8
 
 /* DHCP Option Codes */
 #define DHCP_OPT_PAD                    0
@@ -97,5 +95,10 @@ void dhcp_build_ack(dhcp_server_t *server, dhcp_message_t *request, dhcp_message
 void dhcp_build_nak(dhcp_message_t *request, dhcp_message_t *nak);
 void dhcp_add_option(dhcp_message_t *msg, uint8_t option, uint8_t length, uint8_t *data);
 uint8_t *dhcp_get_option(dhcp_message_t *msg, uint8_t option, uint8_t *length);
+
+/* Helper functions */
+void uint32_to_ip(uint32_t ip, uint8_t *a, uint8_t *b, uint8_t *c, uint8_t *d);
+uint32_t ip_to_uint32(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
+
 
 #endif /* DHCP_SERVER_H */
