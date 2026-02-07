@@ -25,10 +25,7 @@ void cmd_help(const char *args UNUSED) {
     
     // DHCP-related
     uart_puts("  dhcp_init - Initialize DHCP server\n");
-    /* dhcp_config CLI removed */
     uart_puts("  dhcp_leases - Show active DHCP leases\n");
-    /* dhcp_release CLI removed */
-    /* dhcp_stats CLI removed */
     uart_puts("  dhcp_test - Simulate a DHCP discovery request\n");
 }
 
@@ -62,9 +59,6 @@ static void uint32_to_ip(uint32_t ip, uint8_t *a, uint8_t *b, uint8_t *c, uint8_
     *c = (ip >> 8) & 0xFF;
     *d = ip & 0xFF;
 }
-
-/* Hex to string conversion */
-    /* hex byte printing moved to uart.c as uart_put_hexbyte() */
 
 /* Global DHCP server state */
 static dhcp_lease_t g_leases[100];  /* Static lease pool */
@@ -114,8 +108,6 @@ void cmd_dhcp_init(const char *args UNUSED) {
     uart_puts("  Lease time: 3600 seconds\n");
 }
 
-/* `cmd_dhcp_config` removed per user request. */
-
 void cmd_dhcp_leases(const char *args UNUSED) {
     if (!g_server_initialized) {
         uart_puts("DHCP server not initialized\n");
@@ -162,10 +154,6 @@ void cmd_dhcp_leases(const char *args UNUSED) {
     uart_put_int(g_dhcp_server.max_leases);
     uart_puts("\n");
 }
-
-/* `cmd_dhcp_release` removed per user request. */
-
-/* `cmd_dhcp_stats` removed per user request. */
 
 void cmd_dhcp_test(const char *args UNUSED) {
     if (!g_server_initialized) {

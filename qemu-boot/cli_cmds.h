@@ -19,7 +19,6 @@ void cmd_dump32(const char *args);
 // DHCP-related
 void cmd_dhcp_init(const char *args UNUSED);
 void cmd_dhcp_leases(const char *args UNUSED);
-/* dhcp_stats removed */
 void cmd_dhcp_test(const char *args UNUSED);
 
 // UNIMPLEMENTED
