@@ -14,6 +14,7 @@ void cmd_help(const char *args UNUSED) {
 
     // memory-related 
     uart_puts("  info - Provides info on memory alignment\n");
+    uart_puts("  usage - Provides snapshot on current RAM and stack usage\n");
     uart_puts("  peek <addr> - Display 32-bit word at specified <addr>\n");
     uart_puts("  hexdump <addr> <len> - Dump <len> bytes of memory starting <addr>\n");
     uart_puts("  dump32 <addr> <count> - Dump <count> 32-bit words starting <addr>\n"); 
