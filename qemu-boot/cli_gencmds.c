@@ -65,35 +65,35 @@ void cmd_dhcp_init(const char *args UNUSED) {
     uart_puts("1");
     /* Default configuration */
     dhcp_config_t config;
-    uart_puts("2");
+    // uart_puts("2");
     // Server IP: 192.168.1.1
     config.server_ip = ip_to_uint32(192, 168, 1, 1);
-    uart_puts("3");
+    // uart_puts("3");
     // subnet mask
     config.subnet_mask = ip_to_uint32(255, 255, 255, 0);
-    uart_puts("4");
+    // uart_puts("4");
     // gateway IP: 192.168.1.1
     config.gateway_ip = ip_to_uint32(192, 168, 1, 1);
-    uart_puts("5");
+    // uart_puts("5");
     // DNS address: 8.8.8.8
     config.dns_ip = ip_to_uint32(8, 8, 8, 8);
-    uart_puts("6");
+    // uart_puts("6");
     // Pool: 192.168.1.100 - 192.168.1.200
     config.pool_start = ip_to_uint32(192, 168, 1, 100);
-    uart_puts("7");
+    // uart_puts("7");
     config.pool_end = ip_to_uint32(192, 168, 1, 200);
-    uart_puts("8");
+    // uart_puts("8");
     config.lease_time = 3600;
-    uart_puts("9");
+    // uart_puts("9");
     
     /* Set the static lease pool */
     g_dhcp_server.leases = g_leases;
-    uart_puts("A");
+    // uart_puts("A");
     
     dhcp_init_server(&g_dhcp_server, &config, 100);
-    uart_puts("B");
+    // uart_puts("B");
     g_server_initialized = 1;
-    uart_puts("C");
+    // uart_puts("C");
     // TODO: not to hard code
     uart_puts("\nDHCP server initialized\n");
     uart_puts("  Server IP: 192.168.1.1\n");
@@ -166,27 +166,46 @@ void cmd_dhcp_test(const char *args UNUSED) {
     
     /* Create mock DHCP messages */
     static dhcp_message_t discover;
+    // uart_puts("1");
     static dhcp_message_t discover_response;
+    // uart_puts("2");
     static dhcp_message_t request;
+    // uart_puts("3");
     static dhcp_message_t request_response;
+    // uart_puts("4");
     
     kmemset(&discover, 0, sizeof(dhcp_message_t));
+    // uart_puts("5");
     kmemset(&discover_response, 0, sizeof(dhcp_message_t));
+    // uart_puts("6");
     kmemset(&request, 0, sizeof(dhcp_message_t));
+    // uart_puts("7");
     kmemset(&request_response, 0, sizeof(dhcp_message_t));
+    // uart_puts("8");
     
     /* Set up DISCOVER message */
     discover.op = 1;                    /* BOOTREQUEST */
+    // uart_puts("9");
     discover.htype = 1;                 /* Ethernet */
+    // uart_puts(" 10");
     discover.hlen = 6;                  /* MAC address length */
+    // uart_puts(" 11");
     discover.hops = 0;
+    // uart_puts(" 12");
     discover.xid = 0x12345678;          /* Transaction ID */
+    // uart_puts(" 13");
     discover.secs = 0;
+    // uart_puts(" 14");
     discover.flags = 0;
+    // uart_puts(" 15");
     discover.ciaddr = 0;
+    // uart_puts(" 16");
     discover.yiaddr = 0;
+    // uart_puts(" 17");
     discover.siaddr = 0;
+    // uart_puts(" 18");
     discover.giaddr = 0;
+    // uart_puts(" 19");
     
     /* Test MAC address: AA:BB:CC:DD:EE:FF */
     discover.chaddr[0] = MAC1;

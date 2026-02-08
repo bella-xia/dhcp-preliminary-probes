@@ -1,7 +1,7 @@
 #include "dhcp_server.h"
 #include "kstring.h"
 #include <stdio.h>
-
+#include "uart.h"
 /* Helper function to convert integer to IP address bytes */
 void uint32_to_ip(uint32_t ip, uint8_t *a, uint8_t *b, uint8_t *c, uint8_t *d) {
     *a = (ip >> 24) & 0xFF;
@@ -18,37 +18,37 @@ uint32_t ip_to_uint32(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 void dhcp_init_server(dhcp_server_t *server, dhcp_config_t *config, uint16_t max_leases) {
     // TODO: some how it doesn't work without printing the debug messages. 
     extern void uart_puts(const char *s);
-    uart_puts("[S]");
+    // uart_puts("[S]");
     
     server->max_leases = max_leases;
-    uart_puts("[1]");
+    // uart_puts("[1]");
     server->lease_count = 0;
-    uart_puts("[2]");
+    // uart_puts("[2]");
     
     /* Note: leases array should be allocated by caller or use static storage */
     if (server->leases) {
-        uart_puts("[3]");
+        // uart_puts("[3]");
         for (uint16_t i = 0; i < max_leases; i++) {
             server->leases[i].in_use = 0;
         }
-        uart_puts("[4]");
+        // uart_puts("[4]");
     }
     
-    uart_puts("[5]");
+    // uart_puts("[5]");
     server->config.server_ip = config->server_ip;
-    uart_puts("[6]");
+    // uart_puts("[6]");
     server->config.subnet_mask = config->subnet_mask;
-    uart_puts("[7]");
+    // uart_puts("[7]");
     server->config.gateway_ip = config->gateway_ip;
-    uart_puts("[8]");
+    // uart_puts("[8]");
     server->config.dns_ip = config->dns_ip;
-    uart_puts("[9]");
+    // uart_puts("[9]");
     server->config.pool_start = config->pool_start;
-    uart_puts("[10]");
+    // uart_puts("[10]");
     server->config.pool_end = config->pool_end;
-    uart_puts("[11]");
+    // uart_puts("[11]");
     server->config.lease_time = config->lease_time;
-    uart_puts("[E]\n");
+    // uart_puts("[E]\n");
 }
 
 /* Get the DHCP message type from options */
@@ -70,13 +70,17 @@ void dhcp_set_message_type(dhcp_message_t *msg, uint8_t type) {
 /* Find an available IP address from the pool */
 uint32_t dhcp_find_available_ip(dhcp_server_t *server, uint8_t *mac_address) {
     /* Check if MAC already has a lease */
+    uart_puts("1");
     dhcp_lease_t *existing = dhcp_find_lease(server, mac_address);
+    uart_puts("2");
     if (existing) {
         return existing->ip_address;
     }
     
+    uart_puts("3");
     /* Find first available IP */
     for (uint32_t ip = server->config.pool_start; ip <= server->config.pool_end; ip++) {
+    uart_puts("4");
         uint8_t found = 0;
         for (uint16_t i = 0; i < server->lease_count; i++) {
             if (server->leases[i].in_use && server->leases[i].ip_address == ip) {
@@ -310,13 +314,17 @@ void dhcp_build_nak(dhcp_message_t *request, dhcp_message_t *nak) {
 
 /* Main DHCP message processing function */
 void dhcp_process_message(dhcp_server_t *server, dhcp_message_t *request, dhcp_message_t *response) {
+    extern void uart_puts(const char *s);
+    uart_puts("Q");
     uint8_t msg_type = dhcp_get_message_type(request);
     
+    uart_puts("W");
     switch (msg_type) {
         case DHCP_DISCOVER: {
             /* Client is looking for an IP */
+    uart_puts("E");
             uint32_t offered_ip = dhcp_find_available_ip(server, request->chaddr);
-            
+    uart_puts("R");
             if (offered_ip) {
                 dhcp_build_offer(server, request, response, offered_ip);
             }

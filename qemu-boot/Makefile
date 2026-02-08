@@ -2,7 +2,11 @@ CROSS=aarch64-linux-gnu-
 CC=$(CROSS)gcc
 LD=$(CROSS)ld
 OBJCOPY=$(CROSS)objcopy 
-CFLAGS=-O2 -ffreestanding -Wall -Wextra -nostdlib -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables
+CFLAGS = -O0 -g3 -ffreestanding -nostdlib \
+         -Wall -Wextra -Werror=implicit-function-declaration \
+         -fno-builtin -fno-stack-protector \
+         -fno-unwind-tables -fno-asynchronous-unwind-tables \
+         -mgeneral-regs-only
 LDFLAGS=-T linker.ld -nostdlib
 
 CSRC=main.c uart.c kstring.c cli_utils.c cli_gencmds.c cli_memcmds.c dhcp_server.c
