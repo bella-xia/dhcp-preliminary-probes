@@ -2,7 +2,7 @@ import serial
 import sys
 import time
 
-SERIAL_PORT = '/dev/ttyUSB3'
+SERIAL_PORT = '/dev/ttyUSB0'
 BAUD_RATE = 115200
 
 def main():
@@ -29,12 +29,35 @@ def main():
                     print("[Client] Bootloader detected! Sending ACK...")
                     ser.write(b"ACK")
                     ser.flush()
+                    time.sleep(0.01)
                     boot_received = True
                     break
 
     # Now just echo everything
     print("[Client] Handshake complete. Entering interactive mode.\n")
     print("=" * 50)
+    
+    def send_command(cmd: str):
+        for c in cmd:
+            ser.write(c.encode())
+            ser.flush()
+            time.sleep(0.005)  # small delay helps Pi keep up
+        ser.write(b'\n')  # terminate command
+        ser.flush()
+
+    send_command("") # clean buffer
+    
+    CMDS = ["help", "info", 
+            "usage", 
+            "hexdump 0x8000 64",
+            "dump32 0x8000 16",
+            "dhcp_init", 
+            "dhcp_test", "dhcp_test", "dhcp_leased", "dhcp_test",
+            "usage"]
+
+    for cmd in CMDS:
+        send_command(cmd)
+        time.sleep(0.2) # give it some time to respond
     
     try:
         while True:
