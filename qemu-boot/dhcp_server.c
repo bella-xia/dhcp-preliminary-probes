@@ -17,7 +17,7 @@ uint32_t ip_to_uint32(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 /* Initialize the DHCP server */
 void dhcp_init_server(dhcp_server_t *server, dhcp_config_t *config, uint16_t max_leases) {
     // TODO: some how it doesn't work without printing the debug messages. 
-    extern void uart_puts(const char *s);
+    // extern void uart_puts(const char *s);
     // uart_puts("[S]");
     
     server->max_leases = max_leases;
@@ -70,17 +70,17 @@ void dhcp_set_message_type(dhcp_message_t *msg, uint8_t type) {
 /* Find an available IP address from the pool */
 uint32_t dhcp_find_available_ip(dhcp_server_t *server, uint8_t *mac_address) {
     /* Check if MAC already has a lease */
-    uart_puts("1");
+    // uart_puts("1");
     dhcp_lease_t *existing = dhcp_find_lease(server, mac_address);
-    uart_puts("2");
+    // uart_puts("2");
     if (existing) {
         return existing->ip_address;
     }
     
-    uart_puts("3");
+    // uart_puts("3");
     /* Find first available IP */
     for (uint32_t ip = server->config.pool_start; ip <= server->config.pool_end; ip++) {
-    uart_puts("4");
+    // uart_puts("4");
         uint8_t found = 0;
         for (uint16_t i = 0; i < server->lease_count; i++) {
             if (server->leases[i].in_use && server->leases[i].ip_address == ip) {
@@ -314,17 +314,17 @@ void dhcp_build_nak(dhcp_message_t *request, dhcp_message_t *nak) {
 
 /* Main DHCP message processing function */
 void dhcp_process_message(dhcp_server_t *server, dhcp_message_t *request, dhcp_message_t *response) {
-    extern void uart_puts(const char *s);
-    uart_puts("Q");
+    // extern void uart_puts(const char *s);
+    // uart_puts("Q");
     uint8_t msg_type = dhcp_get_message_type(request);
     
-    uart_puts("W");
+    // uart_puts("W");
     switch (msg_type) {
         case DHCP_DISCOVER: {
             /* Client is looking for an IP */
-    uart_puts("E");
+    // uart_puts("E");
             uint32_t offered_ip = dhcp_find_available_ip(server, request->chaddr);
-    uart_puts("R");
+    // uart_puts("R");
             if (offered_ip) {
                 dhcp_build_offer(server, request, response, offered_ip);
             }
