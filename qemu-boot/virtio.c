@@ -48,7 +48,7 @@ static inline void w64(uintptr_t base, uint32_t lo, uint32_t hi, uint64_t v) {
     w32(base + hi, (uint32_t)(v >> 32));
 }
 static inline uint32_t r32(uintptr_t a){ return *(volatile uint32_t*)a; }
-static inline uint32_t v2p(const void *p){ return (uint32_t)(uintptr_t)p; }
+static inline uint64_t v2p(const void *p){ return (uint64_t)(uintptr_t)p; }
 static inline void dmb_ish(void){ __asm__ volatile("dmb ish" ::: "memory"); }
 
 
