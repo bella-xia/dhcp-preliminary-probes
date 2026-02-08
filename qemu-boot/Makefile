@@ -9,7 +9,7 @@ CFLAGS = -O0 -g3 -ffreestanding -nostdlib \
          -mgeneral-regs-only
 LDFLAGS=-T linker.ld -nostdlib
 
-CSRC=main.c uart.c kstring.c cli_utils.c cli_gencmds.c cli_memcmds.c dhcp_server.c
+CSRC=main.c uart.c kstring.c cli_utils.c cli_gencmds.c cli_memcmds.c dhcp_server.c virtio.c
 ASRC=start.S
 
 COBJS=$(CSRC:.c=.o)

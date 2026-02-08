@@ -1,1 +1,1 @@
-qemu-system-aarch64 -M virt -cpu cortex-a53 -m 8 -nographic -kernel bootloader.bin -serial mon:stdio -d int,cpu_reset -D qemu.log
+qemu-system-aarch64 -M virt -cpu cortex-a53 -m 8 -nographic -global virtio-mmio.force-legacy=off -kernel bootloader.bin -serial mon:stdio -d int,cpu_reset -D qemu.log -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device virtio-net-device,netdev=net0

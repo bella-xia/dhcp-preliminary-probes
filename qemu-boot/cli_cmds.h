@@ -21,6 +21,10 @@ void cmd_dhcp_init(const char *args UNUSED);
 void cmd_dhcp_leases(const char *args UNUSED);
 void cmd_dhcp_test(const char *args UNUSED);
 
+// network related
+void cmd_virtio_init(const char *args UNUSED);
+void cmd_virtio_test(const char *args UNUSED);
+
 // UNIMPLEMENTED
 #if 0
 void cmd_poke(const char *args);

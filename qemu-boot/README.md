@@ -5,6 +5,12 @@ Start Docker: run `docker_run.sh` in WSL or directly run the command in `docker_
 # QEMU Usage
 Run `make` then `init_virt.sh`
 
+# Monitor Network Traffic
+After starting QEMU, check `ip link` in Docker (or your host if Docker isn't used). \
+There should be a device called "tap0". This device will disappear once you shut down QEMU. \
+In Docker (or your host), run `[sudo] ip link set tap0 up`, then `[sudo] tcpdump -i tap0`. \
+In QEMU, use `virtio_test` to check its network RX/TX works.
+
 # CLI Functionalities
 
 ## general functions
