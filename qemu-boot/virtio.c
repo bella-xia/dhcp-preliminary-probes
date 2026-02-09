@@ -40,6 +40,23 @@
 /* virtqueue desc flags */
 #define VIRTQ_DESC_F_WRITE              2
 
+#define MMIO_WRITE_EXPECT_EQ(addr, val, msg, errcode) do {  \
+    uint32_t _tmp;                                          \
+    w32((addr), (val));                                     \
+    dmb_ish();                                              \
+    _tmp = r32((addr));                                     \
+    if (_tmp != (val)) {                                    \
+        uart_puts("[virtio] WRITE SILENT FAIL: expected "); \
+        uart_puts(msg);                                     \
+        uart_puts(", instead got ");                        \
+        uart_put_int(_tmp);                                 \
+        uart_putc('\n');                                    \
+        return (errcode);                                   \
+    }                                                       \
+    uart_puts("[virtio] ");                                 \
+    uart_puts(msg);                                         \
+    uart_puts(" OK\n");                                     \
+} while (0)
 
 /* ---------------- MMIO helpers ---------------- */
 static inline void w32(uintptr_t a, uint32_t v){ *(volatile uint32_t*)a = v; }
@@ -60,7 +77,7 @@ typedef struct {
     uint32_t len;
     uint16_t flags;
     uint16_t next;
-} virtq_desc_t;
+} __attribute__((aligned(16))) virtq_desc_t;
 
 typedef struct {
     uint32_t id;
@@ -75,16 +92,17 @@ typedef struct {
 #define TX_QID      1
 #define VHDR_LEN    10   // virtio-net header len
 
-static uint8_t rx_buf[RX_QSZ][PKT_BUF_SZ];
-static uint8_t tx_buf[TX_QSZ][PKT_BUF_SZ];
+static uint8_t rx_buf[RX_QSZ][PKT_BUF_SZ] __attribute__((aligned(16)));
+static uint8_t tx_buf[TX_QSZ][PKT_BUF_SZ] __attribute__((aligned(16)));
 
-static virtq_desc_t rx_desc[RX_QSZ];
-static struct { uint16_t flags, idx; uint16_t ring[RX_QSZ]; } rx_avail;         // virtq_avail_t
-static struct { uint16_t flags, idx; virtq_used_elem_t ring[RX_QSZ]; } rx_used; // virtq_used_t
+static virtq_desc_t rx_desc[RX_QSZ] __attribute__((aligned(16)));
+static struct { uint16_t flags, idx; uint16_t ring[RX_QSZ]; } rx_avail __attribute__((aligned(16)));         // virtq_avail_t
+static struct { uint16_t flags, idx; virtq_used_elem_t ring[RX_QSZ]; } rx_used __attribute__((aligned(16))); // virtq_used_t
 
-static virtq_desc_t tx_desc[TX_QSZ];
-static struct { uint16_t flags, idx; uint16_t ring[TX_QSZ]; } tx_avail;         // virtq_avail_t
-static struct { uint16_t flags, idx; virtq_used_elem_t ring[TX_QSZ]; } tx_used; // virtq_used_t
+static virtq_desc_t tx_desc[TX_QSZ] __attribute__((aligned(16)));
+static struct { uint16_t flags, idx; uint16_t ring[TX_QSZ]; } tx_avail __attribute__((aligned(16)));         // virtq_avail_t
+static struct { uint16_t flags, idx; virtq_used_elem_t ring[TX_QSZ]; } tx_used __attribute__((aligned(16))); // virtq_used_t
+
 
 // last_rx_used and last_tx_used are automatically wrapped at uint16 max
 static uint16_t last_rx_used = 0;
@@ -121,65 +139,224 @@ int virtio_net_init(){
     uart_put_int(ver);
     uart_puts("\n");
 
+    uart_puts("[virtio] rx_desc addr:  ");
+    uart_put_hex64((uintptr_t)rx_desc, 1);
+    uart_putc('\n');
+    uart_puts("[virtio] rx_avail addr: ");
+    uart_put_hex64((uintptr_t)&rx_avail, 1);
+    uart_putc('\n');
+    uart_puts("[virtio] rx_used addr:  ");
+    uart_put_hex64((uintptr_t)&rx_used, 1);
+    uart_putc('\n');
+
+    uart_puts("[virtio] tx_desc addr:  ");
+    uart_put_hex64((uintptr_t)tx_desc, 1);
+    uart_putc('\n');
+    uart_puts("[virtio] tx_avail addr: ");
+    uart_put_hex64((uintptr_t)&tx_avail, 1);
+    uart_putc('\n');
+    uart_puts("[virtio] tx_used addr:  ");
+    uart_put_hex64((uintptr_t)&tx_used, 1);
+    uart_putc('\n');
+ 
     /* reset */
+    /*
     w32(VIRTIO_BASE + VIRTIO_MMIO_STATUS, 0);
     dmb_ish();
+    */
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_STATUS,
+            0,
+            "reset MMIO STATUS to 0",
+            1
+            );
+
 
     /* ACK + DRIVER */
+    /*
     w32(VIRTIO_BASE + VIRTIO_MMIO_STATUS, VIRTIO_STATUS_ACKNOWLEDGE);
+    */
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_STATUS,
+            VIRTIO_STATUS_ACKNOWLEDGE,
+            "set MMIO STATUS to ACK",
+            1
+            );
+
+    /*
     w32(VIRTIO_BASE + VIRTIO_MMIO_STATUS, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER);
+    */
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_STATUS,
+            VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER,
+            "set MMIO STATUS to ACK | DRIVER",
+            1
+            );
 
     /* accept no features */
+    /*
     w32(VIRTIO_BASE + VIRTIO_MMIO_DRIVER_FEATURES_SEL, 0);
+    */
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_DRIVER_FEATURES_SEL,
+            0,
+            "set DRIVER FEATURE SEL to 0",
+            2
+            );
+
+    /* 
     w32(VIRTIO_BASE + VIRTIO_MMIO_DRIVER_FEATURES, 0);
+    */
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_DRIVER_FEATURES,
+            0,
+            "set DRIVER FEATURES to 0",
+            2
+            );
+
     w32(VIRTIO_BASE + VIRTIO_MMIO_DRIVER_FEATURES_SEL, 1);
+    /* 
+     * cannot verify -> FEATURES SEL is write only
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_DRIVER_FEATURES_SEL,
+            1,
+            "set DRIVER FEATURES SEL to 1",
+            2
+            );
+    */
+
+    /*
     w32(VIRTIO_BASE + VIRTIO_MMIO_DRIVER_FEATURES, 0);
+    */
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_DRIVER_FEATURES,
+            0,
+            "set DRIVER FEATURES to 0",
+            2
+            );
 
     /* FEATURES_OK */
     uint32_t st = r32(VIRTIO_BASE + VIRTIO_MMIO_STATUS);
     w32(VIRTIO_BASE + VIRTIO_MMIO_STATUS, st | VIRTIO_STATUS_FEATURES_OK);
-
+   
     /* verify it sticks */
     st = r32(VIRTIO_BASE + VIRTIO_MMIO_STATUS);
     if (!(st & VIRTIO_STATUS_FEATURES_OK)) {
-        uart_puts("[virtio] FEATURES_OK rejected\n");
+        uart_puts("[virtio] FEATURES_OK rejected. Instead got ");
+        uart_put_int(st);
+        uart_putc('\n');
         w32(VIRTIO_BASE + VIRTIO_MMIO_STATUS, st | VIRTIO_STATUS_FAILED);
         return -3;
     }
+    uart_puts("[virtio] completes setting MMIO STATUS to indicate FEATURES_OK\n");
 
     /* RX queue */
     w32(VIRTIO_BASE + VIRTIO_MMIO_QUEUE_SEL, RX_QID);
-    if (r32(VIRTIO_BASE + VIRTIO_MMIO_QUEUE_NUM_MAX) < RX_QSZ) return -4;
+    /*
+     * cannot verify -> QUEUE_SEL is write only
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_QUEUE_SEL,
+            RX_QID,
+            "set QUEUE_SEL to RX",
+            3
+            );
+    */
+
+    if (r32(VIRTIO_BASE + VIRTIO_MMIO_QUEUE_NUM_MAX) < RX_QSZ) {
+        uart_puts("[virtio] queue size error: MMIO_QUEUE_NUM_MAX smaller than RX_QSZ\n");
+        return -4;
+    }
+    uart_puts("[virtio] checked MMIO_QUEUE_NUM_MAX size enough for RX_QSZ\n");
+
+    
     w32(VIRTIO_BASE + VIRTIO_MMIO_QUEUE_NUM, RX_QSZ);
+    /* 
+     * cannot verify -> QUEUE_NUM is write only
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_QUEUE_NUM,
+            RX_QSZ,
+            "set QUEUE_NUM to RX_QSZ",
+            4
+            );
+    */
 
     kmemset(rx_desc, 0, sizeof(rx_desc));
     kmemset(&rx_avail, 0, sizeof(rx_avail));
     kmemset(&rx_used, 0, sizeof(rx_used));
-
+    
     w64(VIRTIO_BASE, VIRTIO_MMIO_QUEUE_DESC_LOW,  VIRTIO_MMIO_QUEUE_DESC_HIGH,  v2p(rx_desc));
     w64(VIRTIO_BASE, VIRTIO_MMIO_QUEUE_AVAIL_LOW, VIRTIO_MMIO_QUEUE_AVAIL_HIGH, v2p(&rx_avail));
     w64(VIRTIO_BASE, VIRTIO_MMIO_QUEUE_USED_LOW,  VIRTIO_MMIO_QUEUE_USED_HIGH,  v2p(&rx_used));
+
+    /* 
     w32(VIRTIO_BASE + VIRTIO_MMIO_QUEUE_READY, 1);
+    */
+    dmb_ish();
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_QUEUE_READY,
+            1,
+            "set MMIO_QUEUE_READY to 1",
+            5
+            );
 
     /* TX queue */
     w32(VIRTIO_BASE + VIRTIO_MMIO_QUEUE_SEL, TX_QID);
-    if (r32(VIRTIO_BASE + VIRTIO_MMIO_QUEUE_NUM_MAX) < TX_QSZ) return -5;
+    /*
+     * cannot verify -> QUEUE_SEL is write only
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_QUEUE_SEL,
+            TX_QID,
+            "set QUEUE SEL TO TX",
+            3
+            );
+    */
+    if (r32(VIRTIO_BASE + VIRTIO_MMIO_QUEUE_NUM_MAX) < TX_QSZ) {
+        uart_puts("[virtio] queue size error: MMIO_QUEUE_NUM_MAX smaller than TX_QSZ\n");
+        return -5;
+    }
+    uart_puts("[virtio] checked MMIO_QUEUE_NUM_MAX size enough for TX_QSZ\n");
+    
     w32(VIRTIO_BASE + VIRTIO_MMIO_QUEUE_NUM, TX_QSZ);
+    /* 
+     * cannot verify -> QUEUE_NUM is write only 
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_QUEUE_NUM,
+            TX_QSZ,
+            "set QUEUE NUM to TX_QSZ",
+            4
+            );
+    */
 
     kmemset(tx_desc, 0, sizeof(tx_desc));
     kmemset(&tx_avail, 0, sizeof(tx_avail));
     kmemset(&tx_used, 0, sizeof(tx_used));
-
+    
+    /* assume these writes are good for now loll */
     w64(VIRTIO_BASE, VIRTIO_MMIO_QUEUE_DESC_LOW,  VIRTIO_MMIO_QUEUE_DESC_HIGH,  v2p(tx_desc));
     w64(VIRTIO_BASE, VIRTIO_MMIO_QUEUE_AVAIL_LOW, VIRTIO_MMIO_QUEUE_AVAIL_HIGH, v2p(&tx_avail));
     w64(VIRTIO_BASE, VIRTIO_MMIO_QUEUE_USED_LOW,  VIRTIO_MMIO_QUEUE_USED_HIGH,  v2p(&tx_used));
+    /* 
     w32(VIRTIO_BASE + VIRTIO_MMIO_QUEUE_READY, 1);
-
+    */
+    dmb_ish();
+    MMIO_WRITE_EXPECT_EQ(
+            VIRTIO_BASE + VIRTIO_MMIO_QUEUE_READY,
+            1,
+            "set MMIO_QUEUE_READY to 1",
+            5
+            );
+ 
     /* DRIVER_OK */
     st = r32(VIRTIO_BASE + VIRTIO_MMIO_STATUS);
     w32(VIRTIO_BASE + VIRTIO_MMIO_STATUS, st | VIRTIO_STATUS_DRIVER_OK);
+    if (!(r32(VIRTIO_BASE + VIRTIO_MMIO_STATUS) & VIRTIO_STATUS_DRIVER_OK)) {
+        uart_puts("[virtio] DRIVER OK rejected\n");
+        return 5;
+    }
+    uart_puts("[virtio] completes setting MMIO STATUS to indicate DRIVER_OK\n");
 
     /* Reset RX buffers */
+    /* I can check this later via hexdump if it fails */
     virtio_net_clear_rx();
 
     /* Reset last rx/tx used */
@@ -189,7 +366,6 @@ int virtio_net_init(){
     uart_puts("[virtio] init ok\n");
     return 0;
 }
-
 
 /* ---------------- RX: Receive packets ---------------- */
 int virtio_net_recv(uint8_t *out_buf, uint32_t max_len) {
@@ -236,7 +412,6 @@ int virtio_net_recv(uint8_t *out_buf, uint32_t max_len) {
     last_rx_used++;
     return pkt_len;
 }
-
 
 /* ---------------- TX: Send packets ---------------- */
 int virtio_net_send(const uint8_t *pkt, uint32_t len) {
