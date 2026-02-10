@@ -99,6 +99,7 @@ uint8_t *dhcp_get_option(dhcp_message_t *msg, uint8_t option, uint8_t *length);
 /* Helper functions */
 void uint32_to_ip(uint32_t ip, uint8_t *a, uint8_t *b, uint8_t *c, uint8_t *d);
 uint32_t ip_to_uint32(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
+uint32_t ip_list_to_uint32(uint8_t* ip_list);
 
 
 #endif /* DHCP_SERVER_H */

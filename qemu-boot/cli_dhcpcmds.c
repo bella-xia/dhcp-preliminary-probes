@@ -1,9 +1,19 @@
 #include "cli_cmds.h"
 #include "uart.h"
-#include "dhcp_server.h"
 #include "kstring.h"
+#include "dhcp_server.h"
 
 /* Global DHCP server state */
+uint8_t DHCP_SERVER_IP[4] = {192, 168, 1, 1};
+uint8_t DHCP_SUBNET_MASK[4] = {255, 255, 255, 0};
+uint8_t DHCP_GATEWAY_IP[4] = {192, 168, 1, 1};
+uint8_t DHCP_DNS_IP[4] = {8, 8, 8, 8};
+uint8_t DHCP_POOL_START[4] = {192, 168, 1, 100};
+uint8_t DHCP_POOL_END[4] = {192, 168, 1, 255};
+uint32_t LEASE_TIME = 3600;
+
+
+
 // TODO: make it not static
 static dhcp_lease_t g_leases[100];  /* Static lease pool. */
 static dhcp_server_t g_dhcp_server;
@@ -22,23 +32,23 @@ void cmd_dhcp_init(const char *args UNUSED) {
     dhcp_config_t config;
     // uart_puts("2");
     // Server IP: 192.168.1.1
-    config.server_ip = ip_to_uint32(192, 168, 1, 1);
+    config.server_ip = ip_list_to_uint32( DHCP_SERVER_IP );
     // uart_puts("3");
     // subnet mask
-    config.subnet_mask = ip_to_uint32(255, 255, 255, 0);
+    config.subnet_mask = ip_list_to_uint32( DHCP_SUBNET_MASK );
     // uart_puts("4");
     // gateway IP: 192.168.1.1
-    config.gateway_ip = ip_to_uint32(192, 168, 1, 1);
+    config.gateway_ip = ip_list_to_uint32( DHCP_GATEWAY_IP );
     // uart_puts("5");
     // DNS address: 8.8.8.8
-    config.dns_ip = ip_to_uint32(8, 8, 8, 8);
+    config.dns_ip = ip_list_to_uint32( DHCP_DNS_IP );
     // uart_puts("6");
     // Pool: 192.168.1.100 - 192.168.1.200
-    config.pool_start = ip_to_uint32(192, 168, 1, 100);
+    config.pool_start = ip_list_to_uint32( DHCP_POOL_START );
     // uart_puts("7");
-    config.pool_end = ip_to_uint32(192, 168, 1, 200);
+    config.pool_end = ip_list_to_uint32( DHCP_POOL_END );
     // uart_puts("8");
-    config.lease_time = 3600;
+    config.lease_time = LEASE_TIME;
     // uart_puts("9");
     
     /* Set the static lease pool */
@@ -51,9 +61,36 @@ void cmd_dhcp_init(const char *args UNUSED) {
     // uart_puts("C");
     // TODO: not to hard code
     uart_puts("\nDHCP server initialized\n");
-    uart_puts("  Server IP: 192.168.1.1\n");
-    uart_puts("  Pool: 192.168.1.100 - 192.168.1.200\n");
-    uart_puts("  Lease time: 3600 seconds\n");
+    // uart_puts("  Server IP: 192.168.1.1\n");
+    // uart_puts("  Pool: 192.168.1.100 - 192.168.1.200\n");
+    // uart_puts("  Lease time: 3600 seconds\n");
+    uart_puts("  Server IP: ");
+    uart_put_int(DHCP_SERVER_IP[0]);
+    uart_putc('.');
+    uart_put_int(DHCP_SERVER_IP[1]);
+    uart_putc('.');
+    uart_put_int(DHCP_SERVER_IP[2]);
+    uart_putc('.');
+    uart_put_int(DHCP_SERVER_IP[3]);
+    uart_puts("\n  Pool: ");
+    uart_put_int(DHCP_POOL_START[0]);
+    uart_putc('.');
+    uart_put_int(DHCP_POOL_START[1]);
+    uart_putc('.');
+    uart_put_int(DHCP_POOL_START[2]);
+    uart_putc('.');
+    uart_put_int(DHCP_POOL_START[3]);
+    uart_puts(" - ");
+    uart_put_int(DHCP_POOL_END[0]);
+    uart_putc('.');
+    uart_put_int(DHCP_POOL_END[1]);
+    uart_putc('.');
+    uart_put_int(DHCP_POOL_END[2]);
+    uart_putc('.');
+    uart_put_int(DHCP_POOL_END[3]);
+    uart_puts("\n  Lease time: ");  
+    uart_put_int(LEASE_TIME);
+    uart_puts(" seconds\n");
 }
 
 void cmd_dhcp_leases(const char *args UNUSED) {

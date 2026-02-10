@@ -14,6 +14,11 @@ uint32_t ip_to_uint32(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
     return (a << 24) | (b << 16) | (c << 8) | d;
 }
 
+uint32_t ip_list_to_uint32(uint8_t* ip_list) {
+    // WARINING: when calling this function, the list must be at lease 4 elements long!!
+    return ip_to_uint32(ip_list[0], ip_list[1], ip_list[2], ip_list[3]);
+}
+
 /* Initialize the DHCP server */
 void dhcp_init_server(dhcp_server_t *server, dhcp_config_t *config, uint16_t max_leases) {
     
