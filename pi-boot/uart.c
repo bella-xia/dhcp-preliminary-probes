@@ -39,7 +39,7 @@ void uart_flush_tx(void) {
     while(!uart_tx_empty())
         kwait();
 }
-
+ 
 void uart_init(void) {
     // 1. set GPIO
     // set 14, 15 FUNC SELECT to ALT5

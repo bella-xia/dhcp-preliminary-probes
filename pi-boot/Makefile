@@ -11,7 +11,7 @@ CFLAGS = -O0 -g3 -ffreestanding -nostdlib \
 
 LDFLAGS=-T linker.ld -nostdlib
 
-CSRC=main.c gpio.c uart.c uart_aux.c kstring.c cli_utils.c cli_gencmds.c cli_memcmds.c dhcp_server.c
+CSRC=main.c gpio.c uart.c uart_aux.c kstring.c timer.c handshake.c cli_utils.c cli_gencmds.c cli_memcmds.c dhcp_server.c
 ASRC=start.S mmio.S
 
 COBJS=$(CSRC:.c=.o)
@@ -33,4 +33,4 @@ kernel.img: kernel.elf
 	$(OBJCOPY) -O binary $< $@
  
 clean:
-	rm -f *.o *.elf *.bin
+	rm -f *.o *.elf *.bin *.img

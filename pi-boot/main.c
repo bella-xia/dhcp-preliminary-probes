@@ -1,7 +1,7 @@
-#include "mmio.h"
 #include "uart.h"
 #include "kstring.h"
 #include "cli_cmds.h"
+#include "handshake.h"
 
 #define MAX_BUF 128
 
@@ -35,25 +35,13 @@ static const struct command commands[] = {
     {"dhcp_test",    cmd_dhcp_test,      0},
 };
 
-#define RESPONSE "ACK"
-#define MAX_READ 15
 
 void main(void) {
     uart_init();
-    char st[MAX_READ];
-    unsigned i = 0, min_len;
-    while (1) {
-        uart_puts("BOOT\n");
-        i = 0;
-        while (i < MAX_READ && uart_rx_avail()) {
-            st[i++] = uart_getc();
-        }
-        min_len = (i < kstrlen(RESPONSE)) ? i : kstrlen(RESPONSE); 
-        if (kstrncmp(st, RESPONSE, min_len) == 0)
-            break;
-        kwait();
-    }
     
+    put_handshake(300 * 1000);
+    get_handshake();
+
     uart_puts("Hello, minimal bootloader!\n");
     uart_puts("Simple CLI - type 'help' for commands\n");
     uart_puts("u-boot> ");
@@ -64,10 +52,10 @@ void main(void) {
 
     while (1) {
         char c = uart_getc();
-        uart_putc(c);
+        // uart_putc(c);
 
         if (c == '\r' || c == '\n') {
-            uart_puts("\n");
+            // uart_puts("\n");
             buf[index] = '\0';
             paired = 0;
 
@@ -92,7 +80,7 @@ void main(void) {
             // backspace or delete
             if (index > 0)
                 index--;
-            uart_puts("\b \b");
+            // uart_puts("\b \b");
         } else if (index < 127) {
             buf[index++] = c;
         }

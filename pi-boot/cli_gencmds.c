@@ -28,7 +28,7 @@ void cmd_help(const char *args UNUSED) {
 }
 
 void cmd_exit(const char *args UNUSED) {
-    uart_puts("exiting... (still requires Ctrl-a + x to exit qemu)\n");
+    uart_puts("haning on pi side...\n");
     hang();
 }
 void cmd_clear(const char *args UNUSED) {
