@@ -5,7 +5,7 @@ I modified code from circle/sample/21-webserver to also have a dhcp server.
 Easy way: 
 copy whatever in circle-microusb-files into micro sd card.
 
-To add changes: after modify the code in sample/21-webserver, do `make`, make sure that kernel8.img is regenerated. Copy nernel8.img to micro sd card and plug into pi. 
+To add changes: after modify the code in sample/21-webserver, do `make`, make sure that kernel8.img is regenerated. Copy kernel8.img to micro sd card to replace the current one and plug into pi. 
 
 To see the output log (MacOS): 
 `ls /dev/cu.*`
