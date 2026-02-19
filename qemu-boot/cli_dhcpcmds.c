@@ -219,7 +219,7 @@ void cmd_dhcp_test(const char *args UNUSED) {
     dhcp_process_message(&g_dhcp_server, &discover, &discover_response);
     
     /* Extract offered IP from OFFER response (use numeric yiaddr) */
-    uint32_t offered_ip = discover_response.yiaddr;
+    uint32_t offered_ip = ntohl(discover_response.yiaddr);
 
     if (offered_ip == 0) {
         uart_puts("  ERROR: No IP offered!\n");

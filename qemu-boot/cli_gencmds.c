@@ -26,6 +26,9 @@ void cmd_help(const char *args UNUSED) {
     // network-related
     uart_puts("  virtio_init - Initialize virtio for network\n");
     uart_puts("  virtio_test - Test network RX/TX\n");
+
+    // parser-related
+    uart_puts("  parser_test - Test parser combined with virtio recieve and dhcp process\n");
 }
 
 void cmd_exit(const char *args UNUSED) {

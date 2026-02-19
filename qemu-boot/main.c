@@ -31,10 +31,14 @@ static const struct command commands[] = {
     {"dhcp_init",    cmd_dhcp_init,      0},
     {"dhcp_leases",  cmd_dhcp_leases,    0},
     {"dhcp_test",    cmd_dhcp_test,      0},
+    
 
     // network-related cli
     {"virtio_init", cmd_virtio_init, 0},
     {"virtio_test", cmd_virtio_test, 0},
+
+    // packet-parser-builder-related
+    {"parser_test",  cmd_parser_test, 0}, 
 };
 
 void main(void) {

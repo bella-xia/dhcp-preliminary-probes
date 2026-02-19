@@ -25,6 +25,10 @@ void cmd_dhcp_test(const char *args UNUSED);
 void cmd_virtio_init(const char *args UNUSED);
 void cmd_virtio_test(const char *args UNUSED);
 
+// packet parser and builder related
+void cmd_parser_test(const char *args UNUSED);
+// void cmd_dhcp_loop(const char *args UNUSED);
+
 // UNIMPLEMENTED
 #if 0
 void cmd_poke(const char *args);

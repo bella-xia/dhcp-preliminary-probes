@@ -2,6 +2,19 @@
 #include "kstring.h"
 #include <stdio.h>
 
+/* Convert 32-bit host byte order to network byte order */
+uint32_t htonl(uint32_t val) {
+    // Check endianness at compile time
+    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+        return ((val & 0xFF000000) >> 24) |
+               ((val & 0x00FF0000) >> 8)  |
+               ((val & 0x0000FF00) << 8)  |
+               ((val & 0x000000FF) << 24);
+    #else
+        return val;
+    #endif
+}
+
 /* Helper function to convert integer to IP address bytes */
 void uint32_to_ip(uint32_t ip, uint8_t *a, uint8_t *b, uint8_t *c, uint8_t *d) {
     *a = (ip >> 24) & 0xFF;
@@ -180,11 +193,11 @@ void dhcp_build_offer(dhcp_server_t *server, dhcp_message_t *request,
     offer->secs = 0;
     offer->flags = request->flags;
     offer->ciaddr = 0;
-    offer->yiaddr = offered_ip;
-    offer->siaddr = server->config.server_ip;
+    offer->yiaddr = htonl(offered_ip);
+    offer->siaddr = htonl(server->config.server_ip);
     offer->giaddr = request->giaddr;
     kmemcpy(offer->chaddr, request->chaddr, 16);
-    offer->magic_cookie = DHCP_MAGIC_COOKIE;
+    offer->magic_cookie = htonl(DHCP_MAGIC_COOKIE);
     
     /* Add DHCP options */
     dhcp_set_message_type(offer, DHCP_OFFER);
@@ -232,11 +245,11 @@ void dhcp_build_ack(dhcp_server_t *server, dhcp_message_t *request,
     ack->secs = 0;
     ack->flags = request->flags;
     ack->ciaddr = request->ciaddr;
-    ack->yiaddr = assigned_ip;
-    ack->siaddr = server->config.server_ip;
+    ack->yiaddr = htonl(assigned_ip);
+    ack->siaddr = htonl(server->config.server_ip);
     ack->giaddr = request->giaddr;
     kmemcpy(ack->chaddr, request->chaddr, 16);
-    ack->magic_cookie = DHCP_MAGIC_COOKIE;
+    ack->magic_cookie = htonl(DHCP_MAGIC_COOKIE);
     
     /* Add DHCP options */
     dhcp_set_message_type(ack, DHCP_ACK);
@@ -286,7 +299,7 @@ void dhcp_build_nak(dhcp_message_t *request, dhcp_message_t *nak) {
     nak->siaddr = 0;
     nak->giaddr = request->giaddr;
     kmemcpy(nak->chaddr, request->chaddr, 16);
-    nak->magic_cookie = DHCP_MAGIC_COOKIE;
+    nak->magic_cookie = htonl(DHCP_MAGIC_COOKIE);
     
     /* Add message type option */
     uint8_t msg_type = DHCP_NAK;
@@ -322,8 +335,16 @@ void dhcp_process_message(dhcp_server_t *server, dhcp_message_t *request, dhcp_m
                                         (requested_ip_opt[2] << 8) | 
                                         requested_ip_opt[3];
                 
+                // Check for existing lease first
+                dhcp_lease_t *existing = dhcp_find_lease(server, request->chaddr);
+                
+                if (existing && existing->ip_address == requested_ip) {
+                    // Renew existing lease - don't allocate new one!
+                    existing->xid = request->xid;  // Update transaction ID
+                    dhcp_build_ack(server, request, response, requested_ip);
+                }
                 /* Check if IP is in pool and available */
-                if (requested_ip >= server->config.pool_start && 
+                else if (requested_ip >= server->config.pool_start && 
                     requested_ip <= server->config.pool_end) {
                     
                     dhcp_lease_t *lease = dhcp_allocate_lease(server, requested_ip, 
