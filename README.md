@@ -1,3 +1,22 @@
+# Circle
+
+I modified code from circle/sample/21-webserver to also have a dhcp server.
+
+Easy way: 
+copy whatever in circle-microusb-files into micro sd card.
+
+To add changes: after modify the code in sample/21-webserver, do `make`, make sure that kernel8.img is regenerated. Copy kernel8.img to micro sd card to replace the current one and plug into pi. 
+
+To see the output log (MacOS): 
+`ls /dev/cu.*`
+see the output, you will find something like: /dev/cu.SLAB_USBtoUART
+
+Then `screen /dev/cu.SLAB_USBtoUART 115200`, you will see the output. 
+To detach the screen: ctrl + a then d. (Or directly ctrl + d) 
+
+
+
+
 # Trial 1
 This section dedicates to basic passive probes on existing DHCP pattern in public Wi-Fi environments
 
