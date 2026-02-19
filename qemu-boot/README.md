@@ -107,3 +107,21 @@ u-boot> dump32 0x40080000 16
 0x0000000040080020: 0x94000010 0xd503205f 0x17ffffff 0x00000000 
 0x0000000040080030: 0x40091710 0x00000000 0x40081710 0x00000000 
 ```
+
+## run parser_test
+`parser_test` is a loop that receives Ethernet packets through virtio, parses DHCP packets, generates DHCP responses, and sends response packets back through virtio.
+1. run ./init_virt.sh in one terminal, use `parser_test` command to start the loop, use `q` to quit the loop
+2. in another terminal, go inside docker then set up dhcp client:
+    install DHCP client (first time only):
+    ```
+    apt-get update
+    apt-get install -y isc-dhcp-client
+    ```
+    run dhcp client 
+    ```
+    dhclient -d -v tap0  
+    ```
+    to clear all cached state and perform a fresh DHCP handshake:
+    ```
+    dhclient -r tap0 && ip addr flush dev tap0 && rm -f /var/lib/dhcp/dhclient.leases && ip link set tap0 down && ip link set tap0 up && dhclient -d -v tap0
+    ```
