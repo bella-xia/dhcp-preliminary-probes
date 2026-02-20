@@ -18,9 +18,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
+#include "frame.h"
+#include "dhcpserver.h"
 #include <circle/usb/usb.h>
 #include <circle/netdevice.h>
-#include <circle/macaddress.h>
 #include <circle/string.h>
 #include <circle/synchronize.h>
 #include <circle/macros.h>
@@ -64,6 +65,8 @@ boolean CKernel::Initialize (void)
 		{
 			pTarget = &m_Screen;
 		}
+        // thank you we don't have screen, just use UART
+        pTarget = &m_Serial;
 
 		bOK = m_Logger.Initialize (pTarget);
 	}
@@ -112,6 +115,8 @@ TShutdownMode CKernel::Run (void)
 		m_Timer.MsDelay (2000);
 	}
 
+    CDHCPServer serv = CDHCPServer(pEth0);
+
 	m_Logger.Write (FromKernel, LogNotice, "Dumping received broadcasts");
 
 	while (1)
@@ -121,36 +126,22 @@ TShutdownMode CKernel::Run (void)
 
 		if (pEth0->ReceiveFrame (FrameBuffer, &nFrameLength))
 		{
-			CString Sender ("???");
-			CString Protocol ("???");
+        CString Sender = processSrc(FrameBuffer, nFrameLength);
+        CString Protocol = processData(FrameBuffer,nFrameLength, &serv);
 
-			if (nFrameLength >= 14)
-			{
+	    if (nFrameLength >= 14) {
 				CMACAddress MACSender (FrameBuffer+6);
 				MACSender.Format (&Sender);
-
-				unsigned nProtocol = *(unsigned short *) (FrameBuffer+12);
-				switch (nProtocol)
-				{
-				case BE (0x800):
-					Protocol = "IP";
-					break;
-
-				case BE (0x806):
-					Protocol = "ARP";
-					break;
-
-				default:
-					break;
-				}
-			}
+        }
 
 			m_Logger.Write (FromKernel, LogNotice,
 					"%u bytes received from %s (protocol %s)", nFrameLength,
 					(const char *) Sender, (const char *) Protocol);
+/*
 #ifndef NDEBUG
 			debug_hexdump (FrameBuffer, nFrameLength, FromKernel);
 #endif
+*/
 		}
 	}
 
