@@ -36,12 +36,6 @@ CString processData(const u8 *pFrame, unsigned nLen, CDHCPServer *serv) {
 
                                 if (nDstPort == BE(67)) { 
                                     Protocol += " DHCP";
-                                    serv->ProcessDHCPPacket(
-                                            (pFrame + 42),
-                                            nLen - 42,
-                                            *(u32 *)(pFrame + 26),
-                                            *(unsigned short *)(pFrame + 34)
-                                            );
                                 }
                             }
                         }

@@ -17,7 +17,6 @@
 // #include <circle/net/ipaddress.h>
 #include <circle/netdevice.h>
 #include <circle/types.h>
-
 // DHCP packet structure (simplified)
 #ifdef __GNUC__
 #define PACKED __attribute__ ((packed))
@@ -34,14 +33,14 @@ struct DHCPPacket
 	u32 xid;		// transaction ID
 	u16 secs;
 	u16 flags;
-	u32 ciaddr;		// client IP
-	u32 yiaddr;		// your IP (offered)
-	u32 siaddr;		// server IP
-	u32 giaddr;		// gateway IP
+	u8 ciaddr[4];		// client IP
+	u8 yiaddr[4];		// your IP (offered)
+	u8 siaddr[4];		// server IP
+	u8 giaddr[4];		// gateway IP
 	u8  chaddr[16];	// client hardware address
 	u8  sname[64];	// server name
 	u8  file[128];	// boot file
-	u8 magic[4];		// magic cookie (0x63825363)
+	u32 magic;		// magic cookie (0x63825363)
 	u8  options[312];	// options
 } PACKED;
 
@@ -57,6 +56,9 @@ struct DHCPPacket
 #define DHCP_OPTION_MESSAGE_TYPE		53
 #define DHCP_OPTION_PARAM_REQUEST_LIST	55
 #define DHCP_OPTION_END		     		255
+
+#define BE32(x) (((u32)(x) >> 24) & 0xFF) | (((u32)(x) >> 8) & 0xFF00) | \
+                (((u32)(x) << 8) & 0xFF0000) | (((u32)(x) << 24) & 0xFF000000)
 
 // Lease entry structure
 struct DHCPLease
@@ -77,13 +79,13 @@ public:
 
 	// void Run (void);
 
-	void ProcessDHCPPacket (const u8 *pPacket, unsigned nLength, 
-							const u32 &rClientIP, u16 nClientPort);
-	
+	u8 ProcessDHCPPacket (const DHCPPacket *pPacket, unsigned nLength);
+	void SendDHCPOffer (const DHCPPacket *pRequest, const u32 &rClientIP,
+            DHCPPacket *pResponse);
+	void SendDHCPAck (const DHCPPacket *pRequest, const u32 &rClientIP,
+            DHCPPacket *pResponse);
+
 private:
-	void SendDHCPOffer (const DHCPPacket *pRequest, const u32 &rClientIP);
-	void SendDHCPAck (const DHCPPacket *pRequest, const u32 &rClientIP);
-	
 	u32 AssignIP (const u8 *pHWAddr);
 	void RecordLease (const u8 *pHWAddr, u32 ipaddr);
 	boolean FindLease (const u8 *pHWAddr, u32 &ipaddr);

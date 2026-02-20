@@ -3,8 +3,6 @@
 
 #include <circle/types.h>
 #include <circle/string.h>
-#include <circle/macaddress.h>
-#include <circle/net/ipaddress.h>
 #include "dhcpserver.h"
 
 #ifdef __GNUC__
@@ -14,22 +12,22 @@
 #endif
 
 struct EthernetHdr {
-    CMACAddress dstMAC;
-    CMACAddress srcMAC;
+    u8  dstMAC[6];
+    u8  srcMAC[6];
     u16 etherType;
 } PACKED;
 
 struct IPv4Hdr {
-    u8 versionIhl;
-    u8 tos;
+    u8  versionIhl;
+    u8  tos;
     u16 totalLen;
     u16 ident;
     u16 flags;
-    u8 ttl;
-    u8 protocol;
+    u8  ttl;
+    u8  protocol;
     u16 checksum;
-    CIPAddress srcIP;
-    CIPAddress dstIP;
+    u8  srcIP[4];
+    u8  dstIP[4];
 } PACKED;
 
 struct UDPHdr {

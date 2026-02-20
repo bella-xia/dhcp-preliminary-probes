@@ -6,18 +6,18 @@ initial_turbo=0
 #enable_jtag_gpio=1
 
 [pi02]
-kernel=kernel8-32-ethv2.img
+kernel=kernel8-32-eth.img
 
 [pi2]
-kernel=kernel8-32-ethv2.img
+kernel=kernel8-32-eth.img
 
 [pi3]
 arm_64bit=0
-kernel=kernel8-32-ethv2.img
+kernel=kernel8-32-eth.img
 
 [pi3+]
 arm_64bit=0
-kernel=kernel8-32-ethv2.img
+kernel=kernel8-32-eth.img
 
 [pi4]
 armstub=armstub8-rpi4.bin

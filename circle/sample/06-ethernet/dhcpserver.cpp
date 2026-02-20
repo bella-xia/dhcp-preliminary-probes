@@ -13,6 +13,9 @@
 #include <circle/net/in.h>
 #include <circle/debug.h>
 
+
+#include <circle/macaddress.h>
+#include <circle/net/ipaddress.h>
 /*
  * net related modules commented out here
 #include <circle/net/in.h>
@@ -25,6 +28,13 @@
 
 static const char FromDHCPServer[] = "dhcpserver";
 
+static void u32ToBytes(u32 val, u8 *buf)
+{
+    buf[0] = (val >> 24) & 0xFF;
+    buf[1] = (val >> 16) & 0xFF;
+    buf[2] = (val >> 8)  & 0xFF;
+    buf[3] =  val        & 0xFF;
+}
 
 CDHCPServer::CDHCPServer (CNetDevice *pNetDevice)
 	: 
@@ -145,8 +155,7 @@ void CDHCPServer::Run (void)
 }
 */
 
-void CDHCPServer::ProcessDHCPPacket (const u8 *pPacket, unsigned nLength,
-									  const u32 &rClientIP, u16 nClientPort)
+u8 CDHCPServer::ProcessDHCPPacket (const DHCPPacket *pPacket, unsigned nLength)
 {
 	CLogger *pLogger = CLogger::Get ();
 	
@@ -156,14 +165,14 @@ void CDHCPServer::ProcessDHCPPacket (const u8 *pPacket, unsigned nLength,
 		{
 			pLogger->Write (FromDHCPServer, LogWarning, "DHCP packet too small: expected %d, got %d bytes instead", DHCP_FIXED_LEN, nLength);
 		}
-		return;
+		return 0;
 	}
 /*
 #ifndef NDEBUG
 			debug_hexdump (pPacket, nLength, FromDHCPServer);
 #endif
 */
-	const DHCPPacket *pDHCP = (const DHCPPacket *)pPacket;
+	const DHCPPacket *pDHCP = pPacket;
 /*
     if (pLogger) {
         pLogger->Write (FromDHCPServer, LogNotice, "processing DHCP packet starting from %p, parsing options from %p",
@@ -172,16 +181,14 @@ void CDHCPServer::ProcessDHCPPacket (const u8 *pPacket, unsigned nLength,
     }
 */	
 	// Verify magic cookie
-    u32 mCookie = ((pDHCP->magic[0] << 24) | (pDHCP->magic[1] << 16) |
-            (pDHCP->magic[2] << 8) | (pDHCP->magic[3]));
-
-	if (mCookie != DHCP_MAGIC)
+    u32 magic_cookie = BE32(pDHCP->magic);
+	if (magic_cookie != DHCP_MAGIC)
 	{
 		if (pLogger)
 		{
-			pLogger->Write (FromDHCPServer, LogWarning, "Invalid DHCP magic cookie: expected %x but instead got %x", DHCP_MAGIC, mCookie);
+			pLogger->Write (FromDHCPServer, LogWarning, "Invalid DHCP magic cookie: expected %x but instead got %x", DHCP_MAGIC, magic_cookie);
 		}
-		return;
+		return 0;
 	}
 	
 	// Get message type
@@ -202,8 +209,9 @@ void CDHCPServer::ProcessDHCPPacket (const u8 *pPacket, unsigned nLength,
         pLogger->Write(FromDHCPServer, LogNotice, "received DHCP %s packet", (const char *)pTypeName);
 	}
 	
+    return nMessageType;
 	// Handle DHCP messages
-    
+   /* 
 	switch (nMessageType)
 	{
 		case DHCP_DISCOVER:
@@ -226,9 +234,11 @@ void CDHCPServer::ProcessDHCPPacket (const u8 *pPacket, unsigned nLength,
             }
 			break;
 	}
+    */
 }
 
-void CDHCPServer::SendDHCPOffer (const DHCPPacket *pRequest, const u32 &rClientIP)
+void CDHCPServer::SendDHCPOffer (const DHCPPacket *pRequest, const u32 &rClientIP,
+        DHCPPacket *pResponse)
 {
 	CLogger *pLogger = CLogger::Get ();
 
@@ -249,7 +259,7 @@ void CDHCPServer::SendDHCPOffer (const DHCPPacket *pRequest, const u32 &rClientI
 	RecordLease (pRequest->chaddr, nOfferedIP);
 	
 	// Build DHCP response packet
-	DHCPPacket *pResponse = new DHCPPacket;
+	// DHCPPacket *pResponse = new DHCPPacket;
 	assert (pResponse != 0);
 	
 	my_memset (pResponse, 0, sizeof (DHCPPacket));
@@ -261,29 +271,33 @@ void CDHCPServer::SendDHCPOffer (const DHCPPacket *pRequest, const u32 &rClientI
 	pResponse->xid = pRequest->xid;
 	pResponse->secs = 0;
 	pResponse->flags = pRequest->flags;
-	pResponse->ciaddr = 0;
-	pResponse->yiaddr = nOfferedIP;	// Your IP address
+    my_memset(pResponse->ciaddr, 0, 4);
+	my_memcpy(pResponse->giaddr, pRequest->giaddr, 4);
+
+    /*
+	pResponse->yiaddr = nOfferedIP;	    // Your IP address
 	pResponse->siaddr = m_nServerIP;	// Server IP
-	pResponse->giaddr = pRequest->giaddr;
-	
+    */
+    u32ToBytes(nOfferedIP, pResponse->yiaddr);
+    u32ToBytes(m_nServerIP, pResponse->siaddr);
 	my_memcpy (pResponse->chaddr, pRequest->chaddr, 16);
 	
 	// Set magic cookie
+    pResponse->magic = BE32(DHCP_MAGIC);
+    /*
 	pResponse->magic[0] = 0x63;
 	pResponse->magic[1] = 0x82;
 	pResponse->magic[2] = 0x53;
 	pResponse->magic[3] = 0x63;
-	
+	*/
 	// Build DHCP options
 	unsigned nOptionsLen = BuildDHCPOptions (pResponse->options,
 											 sizeof (pResponse->options),
 											 DHCP_OFFER, m_nServerIP, m_nLeaseTime);
-
+/*
 #ifndef NDEBUG
 			debug_hexdump (pResponse, sizeof (DHCPPacket), FromDHCPServer);
 #endif
-
-    /*
 	// Send response to broadcast address (255.255.255.255:68)
 	CIPAddress BroadcastIP (0xFFFFFFFF);
 	
@@ -305,7 +319,8 @@ void CDHCPServer::SendDHCPOffer (const DHCPPacket *pRequest, const u32 &rClientI
     */
 }
 
-void CDHCPServer::SendDHCPAck (const DHCPPacket *pRequest, const u32 &rClientIP)
+void CDHCPServer::SendDHCPAck (const DHCPPacket *pRequest, const u32 &rClientIP,
+        DHCPPacket *pResponse)
 {
 	CLogger *pLogger = CLogger::Get ();
 
@@ -323,7 +338,7 @@ void CDHCPServer::SendDHCPAck (const DHCPPacket *pRequest, const u32 &rClientIP)
 	}
 	
 	// Build DHCP response packet
-	DHCPPacket *pResponse = new DHCPPacket;
+	// DHCPPacket *pResponse = new DHCPPacket;
 	assert (pResponse != 0);
 	
 	my_memset (pResponse, 0, sizeof (DHCPPacket));
@@ -335,22 +350,28 @@ void CDHCPServer::SendDHCPAck (const DHCPPacket *pRequest, const u32 &rClientIP)
 	pResponse->xid = pRequest->xid;
 	pResponse->secs = 0;
 	pResponse->flags = pRequest->flags;
-	pResponse->ciaddr = 0;
+	my_memset(pResponse->ciaddr, 0, 4);
+    my_memcpy(pResponse->giaddr, pRequest->giaddr, 4);
+    /*
 	pResponse->yiaddr = nIP;		// Your IP address
 	pResponse->siaddr = m_nServerIP;	// Server IP
-	pResponse->giaddr = pRequest->giaddr;
-	
+	*/
+    u32ToBytes(nIP, pResponse->yiaddr);
+    u32ToBytes(m_nServerIP, pResponse->siaddr);
+
 	my_memcpy (pResponse->chaddr, pRequest->chaddr, 16);
 	
 	// Set magic cookie
+    pResponse->magic = BE32(DHCP_MAGIC);
+    /*
 	pResponse->options[0] = 0x63;
 	pResponse->options[1] = 0x82;
 	pResponse->options[2] = 0x53;
 	pResponse->options[3] = 0x63;
-	
+	*/
 	// Build DHCP options
-	unsigned nOptionsLen = BuildDHCPOptions (pResponse->options + 4,
-											 sizeof (pResponse->options) - 4,
+	unsigned nOptionsLen = BuildDHCPOptions (pResponse->options,
+											 sizeof (pResponse->options),
 											 DHCP_ACKNOWLEDGE, m_nServerIP, m_nLeaseTime);
 	
     /*

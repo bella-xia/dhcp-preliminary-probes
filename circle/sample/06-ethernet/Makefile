@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= main.o kernel.o mystring.o frame.o dhcpserver.o
+OBJS	= main.o kernel.o mystring.o frame.o debug-frame.o dhcpserver.o
 
 LIBS	= $(CIRCLEHOME)/lib/usb/libusb.a \
 	  $(CIRCLEHOME)/lib/input/libinput.a \
