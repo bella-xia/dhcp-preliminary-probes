@@ -1,0 +1,61 @@
+#
+# Makefile
+#
+
+CIRCLEHOME = ../..
+
+# Path to the shared C DHCP library (relative to this directory).
+DHCPLIB = ../../../dhcp-lib
+
+# dhcp-lib object files compiled from the library sources.
+DHCPLIB_OBJS = \
+	$(DHCPLIB)/dhcp_server.o \
+	$(DHCPLIB)/dhcp_table.o \
+	$(DHCPLIB)/dhcp_bitmap_ops.o \
+	$(DHCPLIB)/dhcp_bitmap_vartime.o \
+	$(DHCPLIB)/dhcp_bitmap_unitime.o
+
+OBJS	= main.o kernel.o mystring.o debug-frame.o \
+	  dhcp-server.o \
+	  $(DHCPLIB_OBJS)
+
+LIBS	= $(CIRCLEHOME)/lib/usb/libusb.a \
+	  $(CIRCLEHOME)/lib/input/libinput.a \
+	  $(CIRCLEHOME)/lib/fs/libfs.a \
+	  $(CIRCLEHOME)/lib/libcircle.a
+
+# Expose dhcp-lib headers to the C++ compiler via EXTRAINCLUDE,
+# which Rules.mk appends to CFLAGS / CPPFLAGS.
+EXTRAINCLUDE = -I $(DHCPLIB)
+
+# Shrink the bitmap pool structs so dhcp_server_t fits comfortably in BSS.
+# With the default DHCP_BITMAP_MAX_RANGE_SIZE=65536 the union in
+# dhcp_server_t would be ~16 KB; with 256 it is ~130 bytes.
+CFLAGS += -DDHCP_BITMAP_MAX_RANGE_SIZE=256 -DDHCP_BITMAP_MAX_RANGES=4
+
+# Lease mode selection.
+# Build default (TABLE) with:        make
+# Build BITMAP_VARTIME with:         make DHCP_LEASE_MODE=BITMAP_VARTIME
+# Build BITMAP_UNITIME with:         make DHCP_LEASE_MODE=BITMAP_UNITIME
+DHCP_LEASE_MODE ?= TABLE
+ifeq ($(DHCP_LEASE_MODE),TABLE)
+CFLAGS += -DDHCP_LEASE_MODE_TABLE
+else ifeq ($(DHCP_LEASE_MODE),BITMAP_VARTIME)
+CFLAGS += -DDHCP_LEASE_MODE_BMVAR
+else ifeq ($(DHCP_LEASE_MODE),BITMAP_UNITIME)
+CFLAGS += -DDHCP_LEASE_MODE_BMUNI
+endif
+
+# Tell the clean rule to also remove dhcp-lib objects built here.
+EXTRACLEAN = $(DHCPLIB_OBJS)
+
+include ../Rules.mk
+
+# Explicit rule for compiling dhcp-lib C sources with Circle's flags.
+# These files live outside the sample directory so the implicit %.o: %.c
+# pattern rule in Rules.mk does not reach them.
+$(DHCPLIB)/%.o: $(DHCPLIB)/%.c
+	@echo "  CC    $@"
+	@$(CC) $(CFLAGS) $(C_STANDARD) -c -o $@ $<
+
+-include $(DEPS)
