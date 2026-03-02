@@ -11,7 +11,8 @@ CFLAGS = -O0 -g3 -ffreestanding -nostdlib \
 
 LDFLAGS=-T linker.ld -nostdlib
 
-CSRC=main.c gpio.c uart.c uart_aux.c kstring.c timer.c handshake.c cli_utils.c cli_gencmds.c cli_memcmds.c dhcp_server.c
+CSRC=main.c gpio.c uart.c uart_aux.c kstring.c timer.c handshake.c cli_utils.c cli_gencmds.c cli_memcmds.c \
+	dhcp_server.c dhcp_table.c dhcp_bitmap_ops.c dhcp_bitmap_vartime.c dhcp_bitmap_unitime.c
 ASRC=start.S mmio.S
 
 COBJS=$(CSRC:.c=.o)

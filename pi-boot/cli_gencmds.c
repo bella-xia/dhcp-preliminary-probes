@@ -85,10 +85,10 @@ void cmd_dhcp_init(const char *args UNUSED) {
     // uart_puts("9");
     
     /* Set the static lease pool */
-    g_dhcp_server.leases = g_leases;
+    g_dhcp_server.pool.table.leases = g_leases;
     // uart_puts("A");
     
-    dhcp_init_server(&g_dhcp_server, &config, 100);
+    dhcp_init_server_table(&g_dhcp_server, &config, 100);
     // uart_puts("B");
     g_server_initialized = 1;
     // uart_puts("C");
@@ -107,8 +107,8 @@ void cmd_dhcp_leases(const char *args UNUSED) {
     
     uart_puts("Active DHCP Leases:\n");
     
-    for (uint16_t i = 0; i < g_dhcp_server.lease_count; i++) {
-        dhcp_lease_t *lease = &g_dhcp_server.leases[i];
+    for (uint16_t i = 0; i < g_dhcp_server.pool.table.lease_count; i++) {
+        dhcp_lease_t *lease = &g_dhcp_server.pool.table.leases[i];
         
         if (lease->in_use) {
             uint8_t a, b, c, d;
@@ -140,9 +140,9 @@ void cmd_dhcp_leases(const char *args UNUSED) {
     }
     
     uart_puts("Total: ");
-    uart_put_int(g_dhcp_server.lease_count);
+    uart_put_int(g_dhcp_server.pool.table.lease_count);
     uart_puts("/");
-    uart_put_int(g_dhcp_server.max_leases);
+    uart_put_int(g_dhcp_server.pool.table.max_leases);
     uart_puts("\n");
 }
 
@@ -222,7 +222,7 @@ void cmd_dhcp_test(const char *args UNUSED) {
     
     /* Process DISCOVER */
     uart_puts("  Sending DISCOVER...\n");
-    dhcp_process_message(&g_dhcp_server, &discover, &discover_response);
+    dhcp_process_message_table(&g_dhcp_server, &discover, &discover_response);
     
     /* Extract offered IP from OFFER response (use numeric yiaddr) */
     uint32_t offered_ip = discover_response.yiaddr;
@@ -272,7 +272,7 @@ void cmd_dhcp_test(const char *args UNUSED) {
     
     /* Process REQUEST */
     uart_puts("  Sending REQUEST...\n");
-    dhcp_process_message(&g_dhcp_server, &request, &request_response);
+    dhcp_process_message_table(&g_dhcp_server, &request, &request_response);
     
     uart_puts("Lease allocation complete. Active leases:\n");
     cmd_dhcp_leases("");

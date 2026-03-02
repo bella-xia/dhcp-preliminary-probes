@@ -22,7 +22,7 @@ int dhcp_init_cmd(int argc, char *argv[]) {
         .lease_time = 3600,                              /* 1 hour */
     };
     
-    dhcp_init_server(&g_dhcp_server, &config, 100);
+    dhcp_init_server_table(&g_dhcp_server, &config, 100);
     g_server_initialized = 1;
     
     uart_printf("DHCP server initialized\n");
@@ -44,8 +44,8 @@ int dhcp_leases_cmd(int argc, char *argv[]) {
     uart_printf("IP Address\t\tMAC Address\t\t\tXID\n");
     uart_printf("--------\t\t-----------\t\t\t---\n");
     
-    for (uint16_t i = 0; i < g_dhcp_server.lease_count; i++) {
-        dhcp_lease_t *lease = &g_dhcp_server.leases[i];
+    for (uint16_t i = 0; i < g_dhcp_server.pool.table.lease_count; i++) {
+        dhcp_lease_t *lease = &g_dhcp_server.pool.table.leases[i];
         
         if (lease->in_use) {
             uint8_t a, b, c, d;
@@ -60,7 +60,8 @@ int dhcp_leases_cmd(int argc, char *argv[]) {
         }
     }
     
-    uart_printf("Total leases: %d/%d\n", g_dhcp_server.lease_count, g_dhcp_server.max_leases);
+    uart_printf("Total leases: %d/%d\n", g_dhcp_server.pool.table.lease_count,
+                                         g_dhcp_server.pool.table.max_leases);
     
     return 0;
 }
