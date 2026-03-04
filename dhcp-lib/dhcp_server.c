@@ -271,116 +271,115 @@ void dhcp_process_message_table(dhcp_server_t *server, dhcp_message_t *request,
  * BITMAP_VARTIME mode — server-level entry points
  * ───────────────────────────────────────────────────────────────────────── */
 
-void dhcp_init_server_bmvar(dhcp_server_t *server, dhcp_config_t *config,
-                            uint16_t range_size, uint32_t lease_duration) {
-    server->config     = *config;
-    server->lease_mode = BITMAP_VARTIME;
-    server->config.lease_time = lease_duration;
-    dhcp_varpool_init(&server->pool.bm_vartime,
-                      config->pool_start, config->pool_end,
-                      range_size, lease_duration);
-}
+// void dhcp_init_server_bmvar(dhcp_server_t *server, dhcp_config_t *config,
+//                             uint16_t range_size, uint32_t lease_duration) {
+//     server->config     = *config;
+//     server->lease_mode = BITMAP_VARTIME;
+//     server->config.lease_time = lease_duration;
+//     dhcp_varpool_init(&server->pool.bm_vartime,
+//                       config->pool_start, config->pool_end,
+//                       range_size, lease_duration);
+// }
 
-void dhcp_process_message_bmvar(dhcp_server_t *server, dhcp_message_t *request,
-                                dhcp_message_t *response, uint32_t current_time) {
-    dhcp_bmpool_var_t *pool = &server->pool.bm_vartime;
-    uint8_t msg_type = dhcp_get_message_type(request);
+// void dhcp_process_message_bmvar(dhcp_server_t *server, dhcp_message_t *request,
+//                                 dhcp_message_t *response, uint32_t current_time) {
+//     dhcp_bmpool_var_t *pool = &server->pool.bm_vartime;
+//     uint8_t msg_type = dhcp_get_message_type(request);
 
-    switch (msg_type) {
-        case DHCP_DISCOVER: {
-            uint32_t pool_size = pool->pool_end - pool->pool_start + 1u;
-            uint32_t offered   = dhcp_bm_next_ip(&pool->offer_counter,
-                                                   pool->pool_start, pool_size);
+//     switch (msg_type) {
+//         case DHCP_DISCOVER: {
+//             uint32_t pool_size = pool->pool_end - pool->pool_start + 1u;
+//             uint32_t offered   = dhcp_bm_next_ip(&pool->offer_counter,
+//                                                    pool->pool_start, pool_size);
 
-            uint32_t remaining = pool->lease_duration;
-            uint32_t offset = offered - pool->pool_start;
-            uint32_t _q, _r;
-            dhcp_bm_udivmod(offset, pool->range_size, &_q, &_r);
-            uint16_t ridx = (uint16_t)_q;
-            if (ridx < pool->num_ranges && pool->ranges[ridx].active) {
-                uint32_t elapsed = current_time - pool->ranges[ridx].activated_at;
-                remaining = (elapsed < pool->lease_duration)
-                            ? (pool->lease_duration - elapsed) : 1u;
-            }
-            server->config.lease_time = remaining;
-            dhcp_build_offer(server, request, response, offered);
-            break;
-        }
+//             uint32_t remaining = pool->lease_duration;
+//             uint32_t offset = offered - pool->pool_start;
+//             uint32_t _q, _r;
+//             dhcp_bm_udivmod(offset, pool->range_size, &_q, &_r);
+//             uint16_t ridx = (uint16_t)_q;
+//             if (ridx < pool->num_ranges && pool->ranges[ridx].active) {
+//                 uint32_t elapsed = current_time - pool->ranges[ridx].activated_at;
+//                 remaining = (elapsed < pool->lease_duration)
+//                             ? (pool->lease_duration - elapsed) : 1u;
+//             }
+//             server->config.lease_time = remaining;
+//             dhcp_build_offer(server, request, response, offered);
+//             break;
+//         }
 
-        case DHCP_REQUEST: {
-            uint8_t  len     = 0;
-            uint8_t *req_opt = dhcp_get_option(request, DHCP_OPT_REQUESTED_IP, &len);
-            uint32_t requested = 0;
-            if (req_opt && len == 4)
-                requested = ((uint32_t)req_opt[0] << 24) | ((uint32_t)req_opt[1] << 16)
-                          | ((uint32_t)req_opt[2] <<  8) |  (uint32_t)req_opt[3];
+//         case DHCP_REQUEST: {
+//             uint8_t  len     = 0;
+//             uint8_t *req_opt = dhcp_get_option(request, DHCP_OPT_REQUESTED_IP, &len);
+//             uint32_t requested = 0;
+//             if (req_opt && len == 4)
+//                 requested = ((uint32_t)req_opt[0] << 24) | ((uint32_t)req_opt[1] << 16)
+//                           | ((uint32_t)req_opt[2] <<  8) |  (uint32_t)req_opt[3];
 
-            uint32_t assigned = 0;
-            if (requested >= server->config.pool_start &&
-                requested <= server->config.pool_end)
-                assigned = dhcp_varpool_alloc_ip(pool, requested, current_time);
-            else if (requested == 0)
-                assigned = dhcp_varpool_alloc(pool, current_time);
+//             uint32_t assigned = 0;
+//             if (requested >= server->config.pool_start &&
+//                 requested <= server->config.pool_end)
+//                 assigned = dhcp_varpool_alloc_ip(pool, requested, current_time);
+//             else if (requested == 0)
+//                 assigned = dhcp_varpool_alloc(pool, current_time);
 
-            if (assigned) {
-                uint32_t remaining = dhcp_varpool_lease_remaining(pool, assigned, current_time);
-                server->config.lease_time = remaining ? remaining : pool->lease_duration;
-                dhcp_build_ack(server, request, response, assigned);
-            } else {
-                dhcp_build_nak(request, response);
-            }
-            break;
-        }
-        default:
-            break;
-    }
-}
+//             if (assigned) {
+//                 uint32_t remaining = dhcp_varpool_lease_remaining(pool, assigned, current_time);
+//                 server->config.lease_time = remaining ? remaining : pool->lease_duration;
+//                 dhcp_build_ack(server, request, response, assigned);
+//             } else {
+//                 dhcp_build_nak(request, response);
+//             }
+//             break;
+//         }
+//         default:
+//             break;
+//     }
+// }
 
 /* ─────────────────────────────────────────────────────────────────────────
  * BITMAP_UNITIME mode — server-level entry points
  * ───────────────────────────────────────────────────────────────────────── */
 
 void dhcp_init_server_bmuni(dhcp_server_t *server, dhcp_config_t *config,
-                            uint16_t range_size, uint32_t lease_duration) {
-    server->config     = *config;
+                            uint16_t range_size, uint32_t lease_time) {
+    server->config = *config;
     server->lease_mode = BITMAP_UNITIME;
-    server->config.lease_time = lease_duration;
-    dhcp_unifpool_init(&server->pool.bm_unitime,
-                       config->pool_start, config->pool_end,
-                       range_size, lease_duration);
+    server->config.lease_time = lease_time;
+    dhcp_bmpool_uni_init(&server->pool.bm_unitime, config->pool_start, lease_time);
 }
 
 void dhcp_process_message_bmuni(dhcp_server_t *server, dhcp_message_t *request,
-                                dhcp_message_t *response, uint32_t current_time) {
+                                dhcp_message_t *response, uint32_t cur_time) {
     dhcp_bmpool_uni_t *pool = &server->pool.bm_unitime;
     uint8_t msg_type = dhcp_get_message_type(request);
 
     switch (msg_type) {
         case DHCP_DISCOVER: {
-            uint32_t pool_size = pool->pool_end - pool->pool_start + 1u;
-            uint32_t offered   = dhcp_bm_next_ip(&pool->offer_counter,
-                                                   pool->pool_start, pool_size);
+            uint32_t offered = dhcp_bmpool_uni_peek(pool, cur_time);
             dhcp_build_offer(server, request, response, offered);
             break;
         }
 
         case DHCP_REQUEST: {
-            uint8_t  len     = 0;
-            uint8_t *req_opt = dhcp_get_option(request, DHCP_OPT_REQUESTED_IP, &len);
-            uint32_t requested = 0;
-            if (req_opt && len == 4)
-                requested = ((uint32_t)req_opt[0] << 24) | ((uint32_t)req_opt[1] << 16)
-                          | ((uint32_t)req_opt[2] <<  8) |  (uint32_t)req_opt[3];
+            uint8_t  length = 0;
+            uint8_t *req_opt = dhcp_get_option(request, DHCP_OPT_REQUESTED_IP, &length);
 
-            uint32_t assigned = 0;
-            if (requested >= server->config.pool_start &&
-                requested <= server->config.pool_end)
-                assigned = dhcp_unifpool_alloc_ip(pool, requested, current_time);
-            else if (requested == 0)
-                assigned = dhcp_unifpool_alloc(pool, current_time);
+            if (req_opt && length == 4) {
+                uint32_t requested_ip = ((uint32_t)req_opt[0] << 24) |
+                                        ((uint32_t)req_opt[1] << 16) |
+                                        ((uint32_t)req_opt[2] <<  8) |
+                                         (uint32_t)req_opt[3];
 
-            if (assigned) dhcp_build_ack(server, request, response, assigned);
-            else          dhcp_build_nak(request, response);
+                if (requested_ip >= server->config.pool_start &&
+                    requested_ip <= server->config.pool_end) {
+                    if (dhcp_bmpool_uni_alloc_ip(pool, requested_ip))
+                        dhcp_build_ack(server, request, response, requested_ip);
+                    else
+                        dhcp_build_nak(request, response);
+                } else {
+                    dhcp_build_nak(request, response);
+                }
+            }
             break;
         }
         default:
