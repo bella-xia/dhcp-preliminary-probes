@@ -23,14 +23,12 @@ typedef struct {
     uint8_t cur_range;          /* Current range index */
 } dhcp_bmpool_uni_t;
 
-void dhcp_bmpool_uni_init(dhcp_bmpool_uni_t *pool, uint32_t pool_start, uint32_t lease_time);
 void dhcp_bmpool_uni_recycle(dhcp_bmpool_uni_t *pool, uint32_t range_idx);
+void dhcp_bmpool_uni_init(dhcp_bmpool_uni_t *pool, uint32_t pool_start, uint32_t lease_time);
 
 /* Peek at the next available IP without committing it */
 uint32_t dhcp_bmpool_uni_peek(dhcp_bmpool_uni_t *pool, uint32_t cur_time);
 /* Commit a specific IP address, return true if successful */
 bool dhcp_bmpool_uni_alloc_ip(dhcp_bmpool_uni_t *pool, uint32_t ip);
-
-void dhcp_bmpool_uni_stats(const dhcp_bmpool_uni_t *pool, int16_t *out_used, uint16_t *out_total);
 
 #endif /* DHCP_BITMAP_UNITIME_H */

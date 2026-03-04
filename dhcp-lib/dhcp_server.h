@@ -111,11 +111,11 @@ void dhcp_init_server_table(dhcp_server_t *server, dhcp_config_t *config,
 void dhcp_process_message_table(dhcp_server_t *server, dhcp_message_t *request, dhcp_message_t *response);
 
 /* BITMAP_VARTIME mode entry points */
-void dhcp_init_server_bmvar(dhcp_server_t *server, dhcp_config_t *config, uint16_t range_size, uint32_t lease_duration);
+void dhcp_init_server_bmvar(dhcp_server_t *server, dhcp_config_t *config);
 void dhcp_process_message_bmvar(dhcp_server_t *server, dhcp_message_t *request, dhcp_message_t *response, uint32_t cur_time);
 
 /* BITMAP_UNITIME mode entry points */
-void dhcp_init_server_bmuni(dhcp_server_t *server, dhcp_config_t *config, uint16_t range_size, uint32_t lease_time);
+void dhcp_init_server_bmuni(dhcp_server_t *server, dhcp_config_t *config);
 void dhcp_process_message_bmuni(dhcp_server_t *server, dhcp_message_t *request, dhcp_message_t *response, uint32_t cur_time);
 
 #endif /* DHCP_SERVER_H */

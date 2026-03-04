@@ -143,14 +143,12 @@ CDHCPServer::CDHCPServer (CNetDevice *pNetDevice)
         pLogger->Write (FromDHCPServer, LogNotice,
                         "DHCP server initialized (TABLE mode)");
 #elif defined(DHCP_LEASE_MODE_BMVAR)
-    dhcp_init_server_bmvar (&m_server, &config,
-                            /*range_size=*/100, /*lease_duration=*/3600);
+    dhcp_init_server_bmvar (&m_server, &config);
     if (pLogger)
         pLogger->Write (FromDHCPServer, LogNotice,
                         "DHCP server initialized (BITMAP_VARTIME mode)");
 #elif defined(DHCP_LEASE_MODE_BMUNI)
-    dhcp_init_server_bmuni (&m_server, &config,
-                            /*range_size=*/100, /*lease_duration=*/3600);
+    dhcp_init_server_bmuni (&m_server, &config);
     if (pLogger)
         pLogger->Write (FromDHCPServer, LogNotice,
                         "DHCP server initialized (BITMAP_UNITIME mode)");
@@ -173,7 +171,7 @@ CDHCPServer::CDHCPServer (CNetDevice *pNetDevice)
 		pLogger->Write (FromDHCPServer, LogNotice, "DHCP network pool configured start at %d.%d.%d.%d", 
 						(config.pool_start >> 24) & 0xff, (config.pool_start >> 16) & 0xff,
                         (config.pool_start >> 8) & 0xff, config.pool_start & 0xff);
-		pLogger->Write (FromDHCPServer, LogNotice, "DHCP network pool configured end at %d.%d.%d.%d", 
+		pLogger->Write (FromDHCPServer, LogNotice, "DHCP network pool configured end at %d.%d.%d.%d (TABLE mode)", 
 						(config.pool_end >> 24) & 0xff, (config.pool_end >> 16) & 0xff,
                         (config.dns_ip >> 8) & 0xff, config.pool_end & 0xff);
     }
@@ -253,11 +251,11 @@ unsigned CDHCPServer::CraftDHCPOffer (const DHCPHdr *pRequest,
 #if defined(DHCP_LEASE_MODE_TABLE)
     dhcp_process_message_table (&m_server, &req, &resp);
 #elif defined(DHCP_LEASE_MODE_BMVAR)
-    u32 ts = CTimer::Get ()->GetClockTicks ();
-    dhcp_process_message_bmvar (&m_server, &req, &resp, ts);
+    u32 ts_in_sec = CTimer::Get ()->GetClockTicks () / 1000000;
+    dhcp_process_message_bmvar (&m_server, &req, &resp, ts_in_sec);
 #elif defined(DHCP_LEASE_MODE_BMUNI)
-    u32 ts = CTimer::Get ()->GetClockTicks ();
-    dhcp_process_message_bmuni (&m_server, &req, &resp, ts);
+    u32 ts_in_sec = CTimer::Get ()->GetClockTicks () / 1000000;
+    dhcp_process_message_bmuni (&m_server, &req, &resp, ts_in_sec);
 #endif
 
     // resp.op == 0 means the library built no response (e.g. pool full).
@@ -287,6 +285,8 @@ unsigned CDHCPServer::CraftDHCPAck (const DHCPHdr *pRequest,
                                      unsigned requestLen,
                                      DHCPHdr *pResponse)
 {
+    CLogger *pLogger = CLogger::Get ();
+
     dhcp_message_t req, resp;
     // Pass the actual packet length so option 50 (Requested IP) is in scope.
     hdrToMsg (pRequest, requestLen, &req);
@@ -295,15 +295,21 @@ unsigned CDHCPServer::CraftDHCPAck (const DHCPHdr *pRequest,
 #if defined(DHCP_LEASE_MODE_TABLE)
     dhcp_process_message_table (&m_server, &req, &resp);
 #elif defined(DHCP_LEASE_MODE_BMVAR)
-    u32 ts = CTimer::Get ()->GetClockTicks ();
-    dhcp_process_message_bmvar (&m_server, &req, &resp, ts);
+    u32 ts_in_sec = CTimer::Get ()->GetClockTicks () / 1000000;
+    dhcp_process_message_bmvar (&m_server, &req, &resp, ts_in_sec);
 #elif defined(DHCP_LEASE_MODE_BMUNI)
-    u32 ts = CTimer::Get ()->GetClockTicks ();
-    dhcp_process_message_bmuni (&m_server, &req, &resp, ts);
+    u32 ts_in_sec = CTimer::Get ()->GetClockTicks () / 1000000;
+    dhcp_process_message_bmuni (&m_server, &req, &resp, ts_in_sec);
 #endif
 
     if (resp.op == 0)
         return 0;
+
+    if (pLogger && dhcp_get_message_type (&resp) == DHCP_ACK)
+        pLogger->Write (FromDHCPServer, LogNotice,
+                        "IP %d.%d.%d.%d accepted",
+                        (resp.yiaddr >> 24) & 0xff, (resp.yiaddr >> 16) & 0xff,
+                        (resp.yiaddr >> 8) & 0xff, resp.yiaddr & 0xff);
 
     unsigned len;
     msgToHdr (&resp, pResponse, &len);

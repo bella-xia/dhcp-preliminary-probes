@@ -271,14 +271,12 @@ void dhcp_process_message_table(dhcp_server_t *server, dhcp_message_t *request,
  * BITMAP_VARTIME mode — server-level entry points
  * ───────────────────────────────────────────────────────────────────────── */
 
-// void dhcp_init_server_bmvar(dhcp_server_t *server, dhcp_config_t *config,
-//                             uint16_t range_size, uint32_t lease_duration) {
+// void dhcp_init_server_bmvar(dhcp_server_t *server, dhcp_config_t *config) {
 //     server->config     = *config;
 //     server->lease_mode = BITMAP_VARTIME;
-//     server->config.lease_time = lease_duration;
 //     dhcp_varpool_init(&server->pool.bm_vartime,
 //                       config->pool_start, config->pool_end,
-//                       range_size, lease_duration);
+//                       range_size, config->lease_time);
 // }
 
 // void dhcp_process_message_bmvar(dhcp_server_t *server, dhcp_message_t *request,
@@ -340,12 +338,10 @@ void dhcp_process_message_table(dhcp_server_t *server, dhcp_message_t *request,
  * BITMAP_UNITIME mode — server-level entry points
  * ───────────────────────────────────────────────────────────────────────── */
 
-void dhcp_init_server_bmuni(dhcp_server_t *server, dhcp_config_t *config,
-                            uint16_t range_size, uint32_t lease_time) {
+void dhcp_init_server_bmuni(dhcp_server_t *server, dhcp_config_t *config) {
     server->config = *config;
     server->lease_mode = BITMAP_UNITIME;
-    server->config.lease_time = lease_time;
-    dhcp_bmpool_uni_init(&server->pool.bm_unitime, config->pool_start, lease_time);
+    dhcp_bmpool_uni_init(&server->pool.bm_unitime, config->pool_start, config->lease_time);
 }
 
 void dhcp_process_message_bmuni(dhcp_server_t *server, dhcp_message_t *request,
@@ -355,8 +351,10 @@ void dhcp_process_message_bmuni(dhcp_server_t *server, dhcp_message_t *request,
 
     switch (msg_type) {
         case DHCP_DISCOVER: {
-            uint32_t offered = dhcp_bmpool_uni_peek(pool, cur_time);
-            dhcp_build_offer(server, request, response, offered);
+            uint32_t offered_ip = dhcp_bmpool_uni_peek(pool, cur_time);
+            if (offered_ip != 0) {
+                dhcp_build_offer(server, request, response, offered_ip);
+            }
             break;
         }
 

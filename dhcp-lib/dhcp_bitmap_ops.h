@@ -31,7 +31,6 @@
 // One IP range tracked by a bitmap
 typedef struct {
     uint32_t ips[DHCP_BITMAP_WORDS_PER_RANGE];
-    bool is_free;
     uint32_t expire_time;
 }  dhcp_bm_range_t;
 

@@ -2,7 +2,7 @@
 
 void dhcp_bm_udivmod(uint64_t n, uint64_t d, uint64_t *quot, uint64_t *rem) {
     uint64_t q = 0u, r = 0u;
-    for (int i = 31; i >= 0; --i) {
+    for (int i = 63; i >= 0; --i) {
         r = (r << 1u) | ((n >> i) & 1u);
         if (r >= d) { r -= d; q |= (1u << i); }
     }
@@ -19,6 +19,7 @@ void dhcp_bm_clear(dhcp_bm_range_t *range, uint32_t bit) {
 }
 
 bool dhcp_bm_used(const dhcp_bm_range_t *range, uint32_t bit) {
+    if (bit >= DHCP_BITMAP_RANGE_SIZE) return true;
     return (bool)((range->ips[bit >> 5u] >> (bit & 31u)) & 1u);
 }
 
