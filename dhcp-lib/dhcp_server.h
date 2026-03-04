@@ -1,10 +1,22 @@
 #ifndef DHCP_SERVER_H
 #define DHCP_SERVER_H
 
+/*
+ * Compile-time lease mode selection via:
+ *   -DDHCP_LEASE_MODE_TABLE      (default) per-MAC lease table
+ *   -DDHCP_LEASE_MODE_BMVAR      bitmap pool, variable lease time
+ *   -DDHCP_LEASE_MODE_BMUNI      bitmap pool, unified lease time
+ */
+
 #include <stdint.h>
-#include "dhcp_table.h"
+
+#if defined(DHCP_LEASE_MODE_BMVAR)
 #include "dhcp_bitmap_vartime.h"
+#elif defined(DHCP_LEASE_MODE_BMUNI)
 #include "dhcp_bitmap_unitime.h"
+#else
+#include "dhcp_table.h"
+#endif
 
 /* DHCP Message Types */
 #define DHCP_DISCOVER 1
@@ -71,22 +83,16 @@ typedef struct {
     uint32_t lease_time;        /* Default lease time in seconds */
 } dhcp_config_t;
 
-/* Lease Mode Selector */
-typedef enum {
-    TABLE          = 0, /* per-lease table with MAC tracking */
-    BITMAP_VARTIME = 1, /* bitmap pool — variable lease time */
-    BITMAP_UNITIME = 2, /* bitmap pool — unified lease time */
-} dhcp_lease_mode_t;
-
 /* DHCP Server State */
 typedef struct {
     dhcp_config_t config;
-    dhcp_lease_mode_t lease_mode;
-    union {
-        dhcp_tablepool_t table;         /* TABLE mode */
-        dhcp_bmpool_var_t bm_vartime;   /* BITMAP_VARTIME mode */
-        dhcp_bmpool_uni_t bm_unitime;   /* BITMAP_UNITIME mode */
-    } pool;
+#if defined(DHCP_LEASE_MODE_BMVAR)
+    dhcp_bmpool_var_t pool;
+#elif defined(DHCP_LEASE_MODE_BMUNI)
+    dhcp_bmpool_uni_t pool;
+#else
+    dhcp_tablepool_t pool;  // default
+#endif
 } dhcp_server_t;
 
 /* Shared message utilities */
@@ -102,20 +108,16 @@ uint8_t *dhcp_get_option(dhcp_message_t *msg, uint8_t option, uint8_t *length);
 void uint32_to_ip(uint32_t ip, uint8_t *a, uint8_t *b, uint8_t *c, uint8_t *d);
 uint32_t ip_to_uint32(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
 
-/*
- * TABLE mode entry points.
- * leases  — caller-allocated array of dhcp_lease_t with room for max_leases entries.
- */
+#if defined(DHCP_LEASE_MODE_TABLE)
 void dhcp_init_server_table(dhcp_server_t *server, dhcp_config_t *config,
                             dhcp_lease_t *leases, uint16_t max_leases);
 void dhcp_process_message_table(dhcp_server_t *server, dhcp_message_t *request, dhcp_message_t *response);
-
-/* BITMAP_VARTIME mode entry points */
+#elif defined(DHCP_LEASE_MODE_BMVAR)
 void dhcp_init_server_bmvar(dhcp_server_t *server, dhcp_config_t *config);
 void dhcp_process_message_bmvar(dhcp_server_t *server, dhcp_message_t *request, dhcp_message_t *response, uint32_t cur_time);
-
-/* BITMAP_UNITIME mode entry points */
+#elif defined(DHCP_LEASE_MODE_BMUNI)
 void dhcp_init_server_bmuni(dhcp_server_t *server, dhcp_config_t *config);
 void dhcp_process_message_bmuni(dhcp_server_t *server, dhcp_message_t *request, dhcp_message_t *response, uint32_t cur_time);
+#endif
 
 #endif /* DHCP_SERVER_H */

@@ -214,17 +214,17 @@ void dhcp_build_nak(dhcp_message_t *request, dhcp_message_t *nak) {
 /* ─────────────────────────────────────────────────────────────────────────
  * Table mode — server-level entry points
  * ───────────────────────────────────────────────────────────────────────── */
+#if defined(DHCP_LEASE_MODE_TABLE)
 void dhcp_init_server_table(dhcp_server_t *server, dhcp_config_t *config,
                             dhcp_lease_t *leases, uint16_t max_leases) {
-    server->lease_mode = TABLE;
     server->config = *config;
-    dhcp_tablepool_init(&server->pool.table, leases, max_leases);
+    dhcp_tablepool_init(&server->pool, leases, max_leases);
 }
 
 void dhcp_process_message_table(dhcp_server_t *server, dhcp_message_t *request,
                                 dhcp_message_t *response) {
     uint8_t msg_type = dhcp_get_message_type(request);
-    dhcp_tablepool_t *pool = &server->pool.table;
+    dhcp_tablepool_t *pool = &server->pool;
 
     switch (msg_type) {
         case DHCP_DISCOVER: {
@@ -266,20 +266,20 @@ void dhcp_process_message_table(dhcp_server_t *server, dhcp_message_t *request,
             break;
     }
 }
+#endif /* DHCP_LEASE_MODE_TABLE */
 
 /* ─────────────────────────────────────────────────────────────────────────
  * BITMAP_VARTIME mode — server-level entry points
  * ───────────────────────────────────────────────────────────────────────── */
-
+#if defined(DHCP_LEASE_MODE_BMVAR)
 void dhcp_init_server_bmvar(dhcp_server_t *server, dhcp_config_t *config) {
-    server->config     = *config;
-    server->lease_mode = BITMAP_VARTIME;
-    dhcp_bmpool_var_init(&server->pool.bm_vartime, config->pool_start, config->lease_time);
+    server->config = *config;
+    dhcp_bmpool_var_init(&server->pool, config->pool_start, config->lease_time);
 }
 
 void dhcp_process_message_bmvar(dhcp_server_t *server, dhcp_message_t *request,
                                 dhcp_message_t *response, uint32_t cur_time) {
-    dhcp_bmpool_var_t *pool = &server->pool.bm_vartime;
+    dhcp_bmpool_var_t *pool = &server->pool;
     uint8_t msg_type = dhcp_get_message_type(request);
 
     switch (msg_type) {
@@ -319,20 +319,20 @@ void dhcp_process_message_bmvar(dhcp_server_t *server, dhcp_message_t *request,
             break;
     }
 }
+#endif /* DHCP_LEASE_MODE_BMVAR */
 
 /* ─────────────────────────────────────────────────────────────────────────
  * BITMAP_UNITIME mode — server-level entry points
  * ───────────────────────────────────────────────────────────────────────── */
-
+#if defined(DHCP_LEASE_MODE_BMUNI)
 void dhcp_init_server_bmuni(dhcp_server_t *server, dhcp_config_t *config) {
     server->config = *config;
-    server->lease_mode = BITMAP_UNITIME;
-    dhcp_bmpool_uni_init(&server->pool.bm_unitime, config->pool_start, config->lease_time);
+    dhcp_bmpool_uni_init(&server->pool, config->pool_start, config->lease_time);
 }
 
 void dhcp_process_message_bmuni(dhcp_server_t *server, dhcp_message_t *request,
                                 dhcp_message_t *response, uint32_t cur_time) {
-    dhcp_bmpool_uni_t *pool = &server->pool.bm_unitime;
+    dhcp_bmpool_uni_t *pool = &server->pool;
     uint8_t msg_type = dhcp_get_message_type(request);
 
     switch (msg_type) {
@@ -370,3 +370,4 @@ void dhcp_process_message_bmuni(dhcp_server_t *server, dhcp_message_t *request,
             break;
     }
 }
+#endif /* DHCP_LEASE_MODE_BMUNI */
