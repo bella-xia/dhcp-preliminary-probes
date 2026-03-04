@@ -55,10 +55,10 @@ uint32_t dhcp_bmpool_uni_peek(dhcp_bmpool_uni_t *pool, uint32_t cur_time) {
     uint32_t candidate = dhcp_bm_next_ip(&pool->counter, range_start);
     if (dhcp_bmpool_uni_ip_used(pool, candidate)) return 0u;
     
-    // Set expiration time + 10s grace period if current range is full
+    // Set expiration time + 5s grace period if current range is full
     // The expiration time is set here in case REQUEST is never received
     if (dhcp_bm_range_full(range_start, candidate)) {
-        pool->ranges[pool->cur_range].expire_time = cur_time + pool->lease_time + 10;
+        pool->ranges[pool->cur_range].expire_time = cur_time + pool->lease_time + 5;
     }
 
     return candidate;

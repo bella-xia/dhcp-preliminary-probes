@@ -132,7 +132,7 @@ CDHCPServer::CDHCPServer (CNetDevice *pNetDevice)
     config.subnet_mask = 0xFFFFFF00u;  // 255.255.255.0
     config.dns_ip      = 0xC0A80401u;  // point DNS at the server for now
     config.pool_start  = 0xC0A80464u;  // 192.168.4.100
-    config.pool_end    = 0xC0A804C8u;  // 192.168.4.200
+    config.pool_end    = 0xC0A8FFFFu;  // 192.168.255.255
     config.lease_time  = 3600;         // 1 hour
 
     CLogger *pLogger = CLogger::Get ();
@@ -171,9 +171,9 @@ CDHCPServer::CDHCPServer (CNetDevice *pNetDevice)
 		pLogger->Write (FromDHCPServer, LogNotice, "DHCP network pool configured start at %d.%d.%d.%d", 
 						(config.pool_start >> 24) & 0xff, (config.pool_start >> 16) & 0xff,
                         (config.pool_start >> 8) & 0xff, config.pool_start & 0xff);
-		pLogger->Write (FromDHCPServer, LogNotice, "DHCP network pool configured end at %d.%d.%d.%d (TABLE mode)", 
+		pLogger->Write (FromDHCPServer, LogNotice, "DHCP network pool configured end at %d.%d.%d.%d", 
 						(config.pool_end >> 24) & 0xff, (config.pool_end >> 16) & 0xff,
-                        (config.dns_ip >> 8) & 0xff, config.pool_end & 0xff);
+                        (config.pool_end >> 8) & 0xff, config.pool_end & 0xff);
     }
 }
 

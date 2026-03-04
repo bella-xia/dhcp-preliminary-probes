@@ -3,8 +3,8 @@
 
 /*
  * Bitmap IP pool where every lease in a range carries the same (full) 
- * lease duration, and the recycle timer starts only once the range is
- * completely packed.
+ * lease duration, and the expiration timer starts only when the range is
+ * full.
  *
  * No MAC→IP mapping and no per-IP timestamp are stored.
  * 

@@ -28,11 +28,6 @@ LIBS	= $(CIRCLEHOME)/lib/usb/libusb.a \
 # which Rules.mk appends to CFLAGS / CPPFLAGS.
 EXTRAINCLUDE = -I $(DHCPLIB)
 
-# Shrink the bitmap pool structs so dhcp_server_t fits comfortably in BSS.
-# With the default DHCP_BITMAP_MAX_RANGE_SIZE=65536 the union in
-# dhcp_server_t would be ~16 KB; with 256 it is ~130 bytes.
-CFLAGS += -DDHCP_BITMAP_MAX_RANGE_SIZE=256 -DDHCP_BITMAP_MAX_RANGES=4
-
 # Lease mode selection.
 # Build default (TABLE) with:        make
 # Build BITMAP_VARTIME with:         make DHCP_LEASE_MODE=BITMAP_VARTIME
