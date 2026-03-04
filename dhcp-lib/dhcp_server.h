@@ -3,19 +3,19 @@
 
 /*
  * Compile-time lease mode selection via:
- *   -DDHCP_LEASE_MODE_TABLE      (default) per-MAC lease table
+ *   -DDHCP_LEASE_MODE_TABLE      (default in circle sample) per-MAC lease table
  *   -DDHCP_LEASE_MODE_BMVAR      bitmap pool, variable lease time
  *   -DDHCP_LEASE_MODE_BMUNI      bitmap pool, unified lease time
  */
 
 #include <stdint.h>
 
-#if defined(DHCP_LEASE_MODE_BMVAR)
+#if defined(DHCP_LEASE_MODE_TABLE)
+#include "dhcp_table.h"
+#elif defined(DHCP_LEASE_MODE_BMVAR)
 #include "dhcp_bitmap_vartime.h"
 #elif defined(DHCP_LEASE_MODE_BMUNI)
 #include "dhcp_bitmap_unitime.h"
-#else
-#include "dhcp_table.h"
 #endif
 
 /* DHCP Message Types */
@@ -86,12 +86,12 @@ typedef struct {
 /* DHCP Server State */
 typedef struct {
     dhcp_config_t config;
-#if defined(DHCP_LEASE_MODE_BMVAR)
+#if defined(DHCP_LEASE_MODE_TABLE)
+    dhcp_tablepool_t pool;
+#elif defined(DHCP_LEASE_MODE_BMVAR)
     dhcp_bmpool_var_t pool;
 #elif defined(DHCP_LEASE_MODE_BMUNI)
     dhcp_bmpool_uni_t pool;
-#else
-    dhcp_tablepool_t pool;  // default
 #endif
 } dhcp_server_t;
 
