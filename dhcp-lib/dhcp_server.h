@@ -111,7 +111,7 @@ uint32_t ip_to_uint32(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
 #if defined(DHCP_LEASE_MODE_TABLE)
 void dhcp_init_server_table(dhcp_server_t *server, dhcp_config_t *config,
                             dhcp_lease_t *leases, uint16_t max_leases);
-void dhcp_process_message_table(dhcp_server_t *server, dhcp_message_t *request, dhcp_message_t *response);
+void dhcp_process_message_table(dhcp_server_t *server, dhcp_message_t *request, dhcp_message_t *response, uint32_t cur_time);
 #elif defined(DHCP_LEASE_MODE_BMVAR)
 void dhcp_init_server_bmvar(dhcp_server_t *server, dhcp_config_t *config);
 void dhcp_process_message_bmvar(dhcp_server_t *server, dhcp_message_t *request, dhcp_message_t *response, uint32_t cur_time);

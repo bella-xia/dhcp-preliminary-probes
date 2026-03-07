@@ -133,7 +133,7 @@ CDHCPServer::CDHCPServer (CNetDevice *pNetDevice)
     config.dns_ip      = 0xC0A80401u;  // point DNS at the server for now
     config.pool_start  = 0xC0A80464u;  // 192.168.4.100
     config.pool_end    = 0xC0A8FFFFu;  // 192.168.255.255
-    config.lease_time  = 3600;         // 1 hour
+    config.lease_time  = 60;         // 1 hour
 
     CLogger *pLogger = CLogger::Get ();
 
@@ -249,7 +249,8 @@ unsigned CDHCPServer::CraftDHCPOffer (const DHCPHdr *pRequest,
     my_memset (&resp, 0, sizeof (resp));
 
 #if defined(DHCP_LEASE_MODE_TABLE)
-    dhcp_process_message_table (&m_server, &req, &resp);
+    u32 ts_in_sec = CTimer::Get ()->GetClockTicks () / 1000000;
+    dhcp_process_message_table (&m_server, &req, &resp, ts_in_sec);
 #elif defined(DHCP_LEASE_MODE_BMVAR)
     u32 ts_in_sec = CTimer::Get ()->GetClockTicks () / 1000000;
     dhcp_process_message_bmvar (&m_server, &req, &resp, ts_in_sec);
@@ -264,7 +265,7 @@ unsigned CDHCPServer::CraftDHCPOffer (const DHCPHdr *pRequest,
     
     if (pLogger) {
         pLogger->Write (FromDHCPServer, LogDebug,
-                        "Lease offered and recorded: %d.%d.%d.%d for MAC Address %u::%u::%u::%u::%u::%u",
+                        "Lease offered and recorded: %d.%d.%d.%d for MAC Address %X::%X::%X::%X::%X::%X",
                         (resp.yiaddr >> 24) & 0xff, (resp.yiaddr >> 16) & 0xff,
                         (resp.yiaddr >> 8) & 0xff, resp.yiaddr & 0xff,
                         pRequest->chaddr[0], pRequest->chaddr[1], pRequest->chaddr[2], 
@@ -293,7 +294,8 @@ unsigned CDHCPServer::CraftDHCPAck (const DHCPHdr *pRequest,
     my_memset (&resp, 0, sizeof (resp));
 
 #if defined(DHCP_LEASE_MODE_TABLE)
-    dhcp_process_message_table (&m_server, &req, &resp);
+    u32 ts_in_sec = CTimer::Get ()->GetClockTicks () / 1000000;
+    dhcp_process_message_table (&m_server, &req, &resp, ts_in_sec);
 #elif defined(DHCP_LEASE_MODE_BMVAR)
     u32 ts_in_sec = CTimer::Get ()->GetClockTicks () / 1000000;
     dhcp_process_message_bmvar (&m_server, &req, &resp, ts_in_sec);

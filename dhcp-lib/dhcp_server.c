@@ -218,19 +218,21 @@ void dhcp_build_nak(dhcp_message_t *request, dhcp_message_t *nak) {
 void dhcp_init_server_table(dhcp_server_t *server, dhcp_config_t *config,
                             dhcp_lease_t *leases, uint16_t max_leases) {
     server->config = *config;
-    dhcp_tablepool_init(&server->pool, leases, max_leases);
+    dhcp_tablepool_init(&server->pool, config->pool_start, leases, max_leases);
 }
 
 void dhcp_process_message_table(dhcp_server_t *server, dhcp_message_t *request,
-                                dhcp_message_t *response) {
+                                dhcp_message_t *response, uint32_t cur_time) {
     uint8_t msg_type = dhcp_get_message_type(request);
     dhcp_tablepool_t *pool = &server->pool;
+    if (pool->lease_count >= pool->max_leases)
+        dhcp_tablepool_cleanup_expire_lease(pool, cur_time); 
 
     switch (msg_type) {
         case DHCP_DISCOVER: {
             uint32_t offered_ip = dhcp_tablepool_find_available_ip(
                 pool, server->config.pool_start, server->config.pool_end,
-                request->chaddr);
+                request->chaddr, cur_time);
             if (offered_ip)
                 dhcp_build_offer(server, request, response, offered_ip);
             break;
@@ -248,10 +250,7 @@ void dhcp_process_message_table(dhcp_server_t *server, dhcp_message_t *request,
 
                 if (requested_ip >= server->config.pool_start &&
                     requested_ip <= server->config.pool_end) {
-                    dhcp_lease_t *lease = dhcp_tablepool_alloc_lease(
-                        pool, requested_ip, request->chaddr,
-                        request->xid, server->config.lease_time);
-                    if (lease)
+                    if (dhcp_tablepool_alloc_lease(pool, requested_ip, request->chaddr, server->config.lease_time, cur_time))
                         dhcp_build_ack(server, request, response, requested_ip);
                     else
                         dhcp_build_nak(request, response);

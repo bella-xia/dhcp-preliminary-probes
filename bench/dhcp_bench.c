@@ -168,6 +168,7 @@ static bench_result_t run_server(uint32_t burst_size) {
     dhcp_server_t    server;    /* holds only config (no mode flag set) */
     dhcp_message_t   req, resp;
     dhcp_config_t    cfg = make_config();
+    uint32_t          sim_time = 0;  /* simulated clock; stays 0 during burst */
 
     if (!leases) {
         bench_result_t oom = { burst_size, UINT32_MAX, 0.0, 0.0, 0.0 };
@@ -181,7 +182,7 @@ static bench_result_t run_server(uint32_t burst_size) {
 
     for (int rep = 0; rep < REPS; rep++) {
         /* Fresh pool each rep so it is always empty at burst start */
-        dhcp_tablepool_init(&pool, leases, (uint16_t)burst_size);
+        dhcp_tablepool_init(&pool, cfg.pool_start, leases, (uint16_t)burst_size);
         offers = 0;
 
         uint64_t t0 = now_ns();
@@ -190,11 +191,10 @@ static bench_result_t run_server(uint32_t burst_size) {
             memset(&resp, 0, sizeof(resp));
 
             uint32_t offered_ip = dhcp_tablepool_find_available_ip(
-                &pool, cfg.pool_start, cfg.pool_end, req.chaddr);
+                &pool, cfg.pool_start, cfg.pool_end, req.chaddr, sim_time);
             if (offered_ip) {
                 dhcp_build_offer(&server, &req, &resp, offered_ip);
-                dhcp_tablepool_alloc_lease(&pool, offered_ip, req.chaddr,
-                                           req.xid, LEASE_TIME);
+                dhcp_tablepool_alloc_lease(&pool, offered_ip, req.chaddr, LEASE_TIME, sim_time);
                 offers++;
             }
         }
